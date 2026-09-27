@@ -1,0 +1,14 @@
+{
+  "name": "wing-glider",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "test": "tsx --test src/simulation.test.ts",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": { "three": "^0.180.0" },
+  "devDependencies": { "@types/three": "^0.180.0", "@types/node": "^24.0.0", "tsx": "^4.20.0", "typescript": "^5.9.0", "vite": "^7.1.0" }
+}
