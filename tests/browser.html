@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="de">
+  <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Wing Glider · Browser integration checks</title></head>
+  <body style="margin:0;background:#172624;color:#ecede0;font:14px monospace">
+    <div id="viewport"></div>
+    <section style="position:fixed;top:12px;left:12px;max-width:600px;background:#172624ee;padding:20px;z-index:1">
+      <button id="run" style="padding:10px">Run browser integration checks</button>
+      <pre id="results" style="white-space:pre-wrap">Ready. Tests use controlled positions and the real simulation, keyboard controls and renderer.</pre>
+    </section>
+    <script type="module" src="./browser.ts"></script>
+  </body>
+</html>
