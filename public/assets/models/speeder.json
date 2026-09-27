@@ -1,0 +1,54 @@
+{
+  "name": "speeder",
+  "units": "meters",
+  "up": "+Y",
+  "forward": "-Z",
+  "bounds": {
+    "min": [
+      -2.98,
+      -0.46,
+      -4.3145
+    ],
+    "max": [
+      2.98,
+      1.231,
+      3.6005
+    ],
+    "size": [
+      5.96,
+      1.691,
+      7.915
+    ]
+  },
+  "mesh_count": 14,
+  "material_count": 9,
+  "triangle_count": 23668,
+  "sockets": {
+    "cargo_socket": [
+      0.0,
+      0.9,
+      2.02
+    ],
+    "exhaust_left": [
+      -2.37,
+      0.0,
+      3.62
+    ],
+    "exhaust_right": [
+      2.37,
+      0.0,
+      3.62
+    ],
+    "mining_turret": [
+      0.0,
+      0.8,
+      0.72
+    ],
+    "laser_socket": [
+      0.0,
+      0.28,
+      -0.99
+    ]
+  },
+  "socket_positions_are": "local to parent; laser_socket is relative to mining_turret"
+}

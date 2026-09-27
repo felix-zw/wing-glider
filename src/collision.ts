@@ -1,52 +1,95 @@
-import type { Solid } from './levels';
+import { getSolidFootprint, type Solid } from './levels';
 import type { Position } from './resources';
 
 export interface Contact extends Position { t: number; nx: number; nz: number; solid: Solid }
-export function contains(s: Solid, p: Position, radius = 0): boolean {
-  return s.kind === 'asteroid' ? Math.hypot(p.x - s.x, p.z - s.z) < s.radius + radius - 1e-7
-    : Math.abs(p.x - s.x) < s.halfX + radius - 1e-7 && Math.abs(p.z - s.z) < s.halfZ + radius - 1e-7;
+const EPS = 1e-7;
+
+/** Signed distance to a convex polygon and the nearest outward escape direction. */
+function boundary(points: readonly Position[], p: Position) {
+  let inside = true, distanceSq = Infinity, x = 0, z = 0, nx = 0, nz = 0;
+  for (let i = 0; i < points.length; i++) {
+    const a = points[i], b = points[(i + 1) % points.length], ex = b.x - a.x, ez = b.z - a.z;
+    const lengthSq = ex * ex + ez * ez, length = Math.sqrt(lengthSq);
+    if (ex * (p.z - a.z) - ez * (p.x - a.x) < -EPS) inside = false;
+    const u = Math.max(0, Math.min(1, ((p.x - a.x) * ex + (p.z - a.z) * ez) / lengthSq));
+    const qx = a.x + u * ex, qz = a.z + u * ez, d = (p.x - qx) ** 2 + (p.z - qz) ** 2;
+    if (d < distanceSq) { distanceSq = d; x = qx; z = qz; nx = ez / length; nz = -ex / length; }
+  }
+  const distance = Math.sqrt(distanceSq);
+  if (!inside && distance > EPS) { nx = (p.x - x) / distance; nz = (p.z - z) / distance; }
+  return { distance: inside ? -distance : distance, x, z, nx, nz };
 }
+
+export function contains(s: Solid, p: Position, radius = 0): boolean {
+  const points = getSolidFootprint(s);
+  if (points) return boundary(points, p).distance < radius - EPS;
+  return s.kind === 'asteroid' && Math.hypot(p.x - s.x, p.z - s.z) < s.radius + radius - EPS;
+}
+
+/** Continuous disk-vs-circle / disk-vs-convex-polygon sweep.
+ * Polygon offsets use rounded vertex arcs, so diagonal gaps are not blocked by
+ * the expanded AABB or the pointed corners of a simple half-plane expansion.
+ */
 export function sweep(from: Position, to: Position, solids: readonly Solid[], radius = 0): Contact | null {
-  const dx = to.x - from.x, dz = to.z - from.z;
+  const dx = to.x - from.x, dz = to.z - from.z, speedSq = dx * dx + dz * dz;
   let best: Contact | null = null;
-  for (const s of solids) {
-    let t = Infinity, nx = 0, nz = 0;
-    if (s.kind === 'asteroid') {
-      const ox = from.x - s.x, oz = from.z - s.z, r = s.radius + radius;
-      const a = dx * dx + dz * dz, b = ox * dx + oz * dz, c = ox * ox + oz * oz - r * r;
-      if (c < -1e-7) { t = 0; const l = Math.hypot(ox, oz) || 1; nx = ox / l; nz = oz / l; if (!ox && !oz) nx = 1; }
-      else if (a > 1e-12 && b < 0 && b * b - a * c >= 0) { t = (-b - Math.sqrt(b * b - a * c)) / a; nx = (ox + dx * t) / r; nz = (oz + dz * t) / r; }
-    } else {
-      const hx = s.halfX + radius, hz = s.halfZ + radius;
-      if (contains(s, from, radius)) {
-        t = 0;
-        if (hx - Math.abs(from.x - s.x) < hz - Math.abs(from.z - s.z)) nx = from.x >= s.x ? 1 : -1;
-        else nz = from.z >= s.z ? 1 : -1;
-      } else {
-        let entry = -Infinity, exit = Infinity;
-        for (const [origin, delta, min, max, axis] of [[from.x, dx, s.x - hx, s.x + hx, 0], [from.z, dz, s.z - hz, s.z + hz, 1]]) {
-          if (Math.abs(delta) < 1e-12) { if (origin < min || origin > max) exit = -Infinity; continue; }
-          const lo = Math.min((min - origin) / delta, (max - origin) / delta), hi = Math.max((min - origin) / delta, (max - origin) / delta);
-          if (lo > entry) { entry = lo; nx = axis === 0 ? -Math.sign(delta) : 0; nz = axis === 1 ? -Math.sign(delta) : 0; }
-          exit = Math.min(exit, hi);
-        }
-        if (entry <= exit && entry >= -1e-8) t = Math.max(0, entry);
-      }
+  const record = (solid: Solid, t: number, nx: number, nz: number) => {
+    if (t >= -EPS && t <= 1 && (!best || t < best.t)) {
+      t = Math.max(0, t); best = { t, nx, nz, x: from.x + dx * t, z: from.z + dz * t, solid };
     }
-    if (t >= 0 && t <= 1 && (!best || t < best.t)) best = { t, nx, nz, x: from.x + dx * t, z: from.z + dz * t, solid: s };
+  };
+  const circle = (solid: Solid, x: number, z: number, r: number) => {
+    const ox = from.x - x, oz = from.z - z, b = ox * dx + oz * dz, c = ox * ox + oz * oz - r * r;
+    if (c < -EPS) { const l = Math.hypot(ox, oz); record(solid, 0, l ? ox / l : 1, l ? oz / l : 0); }
+    else if (speedSq > 1e-12 && b < 0 && b * b - speedSq * c >= 0) {
+      const t = (-b - Math.sqrt(b * b - speedSq * c)) / speedSq;
+      const nx = (ox + dx * t) / r, nz = (oz + dz * t) / r;
+      if (dx * nx + dz * nz < -EPS) record(solid, t, nx, nz);
+    }
+  };
+  for (const solid of solids) {
+    const points = getSolidFootprint(solid);
+    if (!points) { if (solid.kind === 'asteroid') circle(solid, solid.x, solid.z, solid.radius + radius); continue; }
+    const start = boundary(points, from);
+    if (start.distance < radius - EPS) { record(solid, 0, start.nx, start.nz); continue; }
+    for (let i = 0; i < points.length; i++) {
+      const a = points[i], b = points[(i + 1) % points.length], ex = b.x - a.x, ez = b.z - a.z;
+      const lengthSq = ex * ex + ez * ez, length = Math.sqrt(lengthSq), nx = ez / length, nz = -ex / length;
+      const approaching = dx * nx + dz * nz;
+      if (approaching < -EPS) {
+        const t = (radius - ((from.x - a.x) * nx + (from.z - a.z) * nz)) / approaching;
+        const u = ((from.x + dx * t - a.x) * ex + (from.z + dz * t - a.z) * ez) / lengthSq;
+        if (u >= -EPS && u <= 1 + EPS) record(solid, t, nx, nz);
+      }
+      if (radius > 0) circle(solid, a.x, a.z, radius);
+    }
   }
   return best;
 }
+
 export function moveOutside(from: Position, to: Position, solids: readonly Solid[], radius = 0): { position: Position; contact: Contact | null } {
   const contact = sweep(from, to, solids, radius);
   if (!contact) return { position: to, contact: null };
-  let { x, z } = contact;
-  if (contains(contact.solid, from, radius)) {
-    const s = contact.solid;
-    if (s.kind === 'asteroid') { x = s.x + contact.nx * (s.radius + radius); z = s.z + contact.nz * (s.radius + radius); }
-    else { if (contact.nx) x = s.x + contact.nx * (s.halfX + radius); if (contact.nz) z = s.z + contact.nz * (s.halfZ + radius); }
+  const position = { x: contact.x + contact.nx * 0.002, z: contact.z + contact.nz * 0.002 };
+  // A resumed/spawned object can start inside more than one touching body. Use
+  // exact nearest boundaries repeatedly instead of assuming a first hit fixes it.
+  for (let pass = 0; pass < 8; pass++) {
+    let changed = false;
+    for (const solid of solids) {
+      const points = getSolidFootprint(solid);
+      if (points) {
+        const near = boundary(points, position);
+        if (near.distance >= radius - EPS) continue;
+        position.x = near.x + near.nx * (radius + 0.002); position.z = near.z + near.nz * (radius + 0.002); changed = true;
+      } else if (solid.kind === 'asteroid' && contains(solid, position, radius)) {
+        const dx = position.x - solid.x, dz = position.z - solid.z, length = Math.hypot(dx, dz);
+        position.x = solid.x + (length ? dx / length : 1) * (solid.radius + radius + 0.002);
+        position.z = solid.z + (length ? dz / length : 0) * (solid.radius + radius + 0.002); changed = true;
+      }
+    }
+    if (!changed) break;
   }
-  return { position: { x: x + contact.nx * 0.002, z: z + contact.nz * 0.002 }, contact };
+  return { position, contact };
 }
 export const clearLine = (from: Position, to: Position, solids: readonly Solid[]) => {
   const hit = sweep(from, to, solids); return !hit || hit.t >= 1 - 1e-5;

@@ -3,154 +3,182 @@ import { RESOURCE_CONFIG as R, TRANSPORTER } from './config';
 import { RESOURCE_TYPES, RESOURCES, type ResourceId, type Deposit } from './resources';
 import { type State } from './simulation';
 import { groundHeight, type LevelWorld } from './levels';
+import type { AssetLibrary } from './assets';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { createOreOutcrop, crystalGeometry, terrainNormal } from './ore-outcrop';
 
-function label(text: string, color: string, width = 256) {
-  const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = 64;
-  const ctx = canvas.getContext('2d')!;
-  ctx.fillStyle = '#142521cc'; ctx.fillRect(0, 8, width, 48);
-  ctx.font = '500 24px monospace'; ctx.textAlign = 'center'; ctx.fillStyle = color; ctx.fillText(text, width / 2, 40);
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true, depthTest: false }));
-  sprite.scale.set(width / 20, 3.2, 1); return sprite;
+type Chunk = { position: THREE.Vector3; rotation: THREE.Quaternion; scale: THREE.Vector3 };
+interface VeinVisual {
+  patch: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
+  chunks: THREE.InstancedMesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
+  pieces: Chunk[];
+  label: THREE.Sprite;
+  amount: number;
 }
 
+function labelMaterial(text: string, color: string, width = 256) {
+  const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = 64;
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = '#07151dc4'; ctx.fillRect(0, 10, width, 44);
+  ctx.fillStyle = color; ctx.fillRect(0, 10, 3, 44);
+  ctx.font = '500 21px Arial, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(text, width / 2 + 2, 39);
+  const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
+  return new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false, depthTest: false, toneMapped: false });
+}
+function glowTexture() {
+  const canvas = document.createElement('canvas'); canvas.width = canvas.height = 128;
+  const ctx = canvas.getContext('2d')!, gradient = ctx.createRadialGradient(64, 64, 1, 64, 64, 62);
+  gradient.addColorStop(0, 'rgba(255,255,255,1)'); gradient.addColorStop(0.08, 'rgba(255,249,220,0.95)');
+  gradient.addColorStop(0.26, 'rgba(255,181,88,0.38)'); gradient.addColorStop(1, 'rgba(255,110,40,0)');
+  ctx.fillStyle = gradient; ctx.fillRect(0, 0, 128, 128);
+  const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; return texture;
+}
+
+/** All mined fragments are visualized from their simulation IDs. Additional sparks
+ * are bounded cosmetic instances and never participate in mining or collection. */
 export class ResourceWorld {
   readonly aimTargets: THREE.Mesh[] = [];
-  private deposits = new Map<string, { root: THREE.Group; ore: THREE.Group; label: THREE.Sprite }>();
+  private deposits = new Map<string, VeinVisual>();
   private fragments = new Map<ResourceId, THREE.InstancedMesh>();
-  private oreMaterials = new Map<ResourceId, THREE.MeshStandardMaterial>();
-  private detailMaterials = new Map<ResourceId, THREE.MeshStandardMaterial>();
-  private oreGeometry = new Map<ResourceId, THREE.BufferGeometry>();
+  private fragmentMaterials = new Map<ResourceId, THREE.MeshStandardMaterial>();
+  private geometries = new Map<ResourceId, THREE.BufferGeometry>();
+  private labels = new Map<ResourceId, THREE.SpriteMaterial>();
+  private colors = new Map<ResourceId, THREE.Color>();
+  private exhaustedColor = new THREE.Color('#3b3935');
   private dummy = new THREE.Object3D();
-  private beam = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 1, 8), new THREE.MeshBasicMaterial({ color: '#e8fff6' }));
-  private glow = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 1, 8), new THREE.MeshBasicMaterial({ color: '#85ffe1', transparent: true, opacity: 0.3, depthWrite: false, blending: THREE.AdditiveBlending }));
-  private target = new THREE.Mesh(new THREE.RingGeometry(3.5, 3.7, 48), new THREE.MeshBasicMaterial({ color: '#eaffdf', side: THREE.DoubleSide, transparent: true, opacity: 0.9, depthTest: false }));
-  private sparks = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.16), new THREE.MeshBasicMaterial({ color: '#d9fff1' }), 14);
+  private beam = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 1, 6), new THREE.MeshBasicMaterial({ color: '#e4fff4', toneMapped: false }));
+  private beamGlow = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 1, 6), new THREE.MeshBasicMaterial({ color: '#78efcf', transparent: true, opacity: 0.2, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+  private target = new THREE.Mesh(new THREE.RingGeometry(1.05, 1.12, 40), new THREE.MeshBasicMaterial({ color: '#eaffdf', side: THREE.DoubleSide, transparent: true, opacity: 0.72, depthWrite: false, toneMapped: false }));
+  private sparks = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.09), new THREE.MeshBasicMaterial({ color: '#ffdb91', toneMapped: false }), 28);
+  private impactGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: '#ffe3b2', transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+  private impactLight = new THREE.PointLight('#ffcc85', 0, 10, 2);
   private up = new THREE.Vector3(0, 1, 0);
+  private forward = new THREE.Vector3(0, 0, 1);
+  private normal = new THREE.Vector3();
   private hit = new THREE.Vector3();
   private direction = new THREE.Vector3();
-  constructor(private scene: THREE.Group, private world: LevelWorld) {
+  private high = true;
+  private elapsed: number | null = null;
+  constructor(private scene: THREE.Group, private world: LevelWorld, private assets: AssetLibrary) {
     for (const id of RESOURCE_TYPES) {
       const r = RESOURCES[id];
-      const material = new THREE.MeshStandardMaterial({ color: r.rock, metalness: r.metalness, roughness: r.roughness,
-        flatShading: true, emissive: r.shape === 'spire' ? r.rock : '#000000', emissiveIntensity: 0.45 });
-      this.oreMaterials.set(id, material);
-      this.detailMaterials.set(id, new THREE.MeshStandardMaterial({ color: r.color, metalness: r.metalness, roughness: r.roughness,
-        emissive: r.color, emissiveIntensity: r.shape === 'spire' ? 0.7 : 0.15, flatShading: true }));
-      const geometry = r.shape === 'spire' ? new THREE.ConeGeometry(1, 3.8, 5) : r.shape === 'cluster' ? new THREE.IcosahedronGeometry(1.2, 0) : new THREE.DodecahedronGeometry(1.3, 0);
-      this.oreGeometry.set(id, geometry);
-      const fragments = new THREE.InstancedMesh(geometry, this.detailMaterials.get(id)!, R.depositsPerType * R.unitsPerDeposit);
-      fragments.count = 0; fragments.frustumCulled = false; fragments.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      this.colors.set(id, new THREE.Color(r.color));
+      this.labels.set(id, labelMaterial(r.name.toUpperCase(), r.color));
+      const material = new THREE.MeshStandardMaterial({ color: r.color, metalness: r.metalness, roughness: r.roughness,
+        emissive: r.color, emissiveIntensity: id === 'crystal' ? 0.65 : 0.08, flatShading: true });
+      this.fragmentMaterials.set(id, material);
+      const geometry = id === 'crystal' ? crystalGeometry()
+        : id === 'copper' ? new THREE.IcosahedronGeometry(0.75, 0) : new THREE.DodecahedronGeometry(0.8, 0);
+      this.geometries.set(id, geometry);
+      const fragments = new THREE.InstancedMesh(geometry, material, R.depositsPerType * R.unitsPerDeposit);
+      fragments.name = `${id}-fragments`; fragments.count = 0; fragments.frustumCulled = false;
+      fragments.castShadow = true; fragments.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       this.fragments.set(id, fragments); scene.add(fragments);
     }
-    this.beam.visible = this.glow.visible = this.target.visible = this.sparks.visible = false;
-    this.sparks.frustumCulled = false;
-    this.target.rotation.x = -Math.PI / 2;
-    scene.add(this.beam, this.glow, this.target, this.sparks);
+    this.sparks.frustumCulled = false; this.sparks.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.beam.visible = this.beamGlow.visible = this.target.visible = this.sparks.visible = this.impactGlow.visible = false;
+    scene.add(this.beam, this.beamGlow, this.target, this.sparks, this.impactGlow, this.impactLight);
+    const beds: THREE.BufferGeometry[] = [], stains: THREE.BufferGeometry[] = [];
+    for (const deposit of world.deposits) {
+      const outcrop = this.createDeposit(deposit); beds.push(outcrop.bed); stains.push(outcrop.stain);
+    }
+    const bed = new THREE.Mesh(mergeGeometries(beds)!, assets.material('rock', { vertexColors:true, roughness:1, metalness:.025, side:THREE.DoubleSide }));
+    bed.name = 'ore-host-rock'; bed.castShadow = bed.receiveShadow = true;
+    const stain = new THREE.Mesh(mergeGeometries(stains)!, assets.material('rock', { vertexColors:true, roughness:1, metalness:0,
+      transparent:true, depthWrite:false, side:THREE.DoubleSide, polygonOffset:true, polygonOffsetFactor:-1, polygonOffsetUnits:-1 }));
+    stain.name = 'ore-weathering'; stain.receiveShadow = true; this.scene.add(bed, stain);
+    beds.forEach(g => g.dispose()); stains.forEach(g => g.dispose());
     this.createTransporter();
   }
+  setQuality(quality: 'high' | 'standard') { this.high = quality === 'high'; this.sparks.count = this.high ? 28 : 12; }
+
   private createDeposit(d: Deposit) {
-    const root = new THREE.Group(), ore = new THREE.Group();
-    const surface = d.surface!, host = this.world.structures.find(s => s.id === d.structureId)!;
-    const vertices: number[] = [];
-    const vertex = (u: number, v: number) => {
-      if (host.kind === 'asteroid') {
-        const angle = Math.atan2(surface.nz, surface.nx) + u * surface.width / (2 * host.radius);
-        const latitude = 0.1 + (v + 1) * 0.3, r = (host.radius + 0.18) * Math.cos(latitude);
-        return [host.x + Math.cos(angle) * r, 1 + Math.sin(latitude) * (host.height / 2 + 0.18), host.z + Math.sin(angle) * r];
-      }
-      const along = u * surface.width * 0.5, outward = surface.kind === 'ground' ? v * 5 : 0;
-      const x = d.x - surface.nz * along + surface.nx * outward, z = d.z + surface.nx * along + surface.nz * outward;
-      return [x, surface.kind === 'ground' ? groundHeight(this.world, x, z) + 0.12 : groundHeight(this.world, x, z) + 0.2 + (v + 1) * 7, z];
-    };
-    for (let i = 0; i < 28; i++) for (let j = 0; j < 18; j++) {
-      const u = i / 14 - 1, v = j / 9 - 1;
-      const band = 0.22 + 0.44 * (1 - u * u) + Math.sin(u * 12) * 0.12;
-      if (Math.abs(v - Math.sin(u * 7) * 0.22) > band || Math.abs(u) > 0.96) continue;
-      const a = vertex(u, v), b = vertex(u + 1 / 14, v), c = vertex(u + 1 / 14, v + 1 / 9), e = vertex(u, v + 1 / 9);
-      vertices.push(...a, ...b, ...c, ...a, ...c, ...e);
-    }
-    const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); geometry.computeVertexNormals();
-    const material = this.detailMaterials.get(d.resource)!.clone(); material.side = THREE.DoubleSide;
-    const colors: number[] = [];
-    for (let i = 0; i < vertices.length; i += 9) {
-      const fleck = Math.sin(vertices[i] * 17.1 + vertices[i + 2] * 31.7);
-      const shade = fleck > 0.6 ? 1 : 0.35 + (fleck + 1) * 0.2;
-      for (let corner = 0; corner < 3; corner++) colors.push(shade, shade, shade);
-    }
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3)); material.vertexColors = true;
-    material.polygonOffset = true; material.polygonOffsetFactor = -2; material.polygonOffsetUnits = -2;
-    const vein = new THREE.Mesh(geometry, material); vein.receiveShadow = true; ore.add(vein); this.aimTargets.push(vein);
-    const name = label(RESOURCES[d.resource].name.toUpperCase(), RESOURCES[d.resource].color);
-    name.position.set(d.x + surface.nx * 6, surface.y + 4, d.z + surface.nz * 6);
-    root.add(ore, name); this.scene.add(root);
-    const visual = { root, ore, label: name }; this.deposits.set(d.id, visual); return visual;
+    const surface = d.surface!, isGround = surface.kind === 'ground';
+    const outcrop = createOreOutcrop(this.world, this.assets, d, this.geometries.get(d.resource)!, this.fragmentMaterials.get(d.resource)!);
+    const {patch, chunks, pieces} = outcrop;
+    this.aimTargets.push(patch, chunks);
+    const name = new THREE.Sprite(this.labels.get(d.resource)!); name.scale.set(9.6, 2.4, 1); name.visible = false;
+    name.position.set(d.x + surface.nx * 3, surface.y + (isGround ? 6.5 : 10.5), d.z + surface.nz * 3);
+    this.scene.add(patch, chunks, name); this.deposits.set(d.id, { patch, chunks, pieces, label: name, amount: 1 });
+    return outcrop;
   }
   private createTransporter() {
-    const ship = new THREE.Group(); ship.position.set(-17, groundHeight(this.world, -17, -4) + 2, -4);
-    const hull = new THREE.MeshStandardMaterial({ color: '#d7d9ca', metalness: 0.55, roughness: 0.45 });
-    const dark = new THREE.MeshStandardMaterial({ color: '#273b41', metalness: 0.7, roughness: 0.4 });
-    const orange = new THREE.MeshStandardMaterial({ color: '#df9c58', metalness: 0.5 });
-    const light = new THREE.MeshStandardMaterial({ color: '#b5fff0', emissive: '#73efd8', emissiveIntensity: 1.2 });
-    const box = (x: number, y: number, z: number, w: number, h: number, l: number, mat: THREE.Material) => {
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, l), mat); mesh.position.set(x, y, z); mesh.castShadow = true; mesh.receiveShadow = true; ship.add(mesh);
-    };
-    box(0, 0, 0, 7, 3, 18, hull); box(0, 1.7, -5, 5, 1.5, 4, dark);
-    box(0, 1.3, 4, 5.5, 1, 7, orange); box(0, 0, -10, 5, 1.8, 3, hull);
-    for (const side of [-1, 1]) {
-      box(side * 5, -0.5, 2, 3, 2.8, 13, dark);
-      box(side * 5, 1, 2, 3.1, 0.3, 8, hull);
-      box(side * 5, -0.4, 8.6, 2, 1, 0.3, light);
-      for (const z of [-5, 5]) { box(side * 3.7, -2, z, 0.6, 3, 0.8, dark); box(side * 3.7, -3.3, z, 2, 0.3, 2, hull); }
-    }
-    for (let i = 0; i < 3; i++) box(0, 2, i * 2.2 + 1.5, 5.6, 0.4, 0.3, dark);
-    this.scene.add(ship);
-    const zone = new THREE.Mesh(new THREE.RingGeometry(TRANSPORTER.radius - 0.18, TRANSPORTER.radius, 64), new THREE.MeshBasicMaterial({ color: '#f8d597', transparent: true, opacity: 0.95, side: THREE.DoubleSide }));
-    zone.rotation.x = -Math.PI / 2; zone.position.set(TRANSPORTER.x, groundHeight(this.world, 0, 0) + 0.2, TRANSPORTER.z); this.scene.add(zone);
-    const name = label('ATLAS / FRACHT', '#ffe0a4', 320); name.position.set(-15, 10, -20); this.scene.add(name);
-    const dock = label('LADEZONE', '#ffe0a4', 192); dock.position.set(0, 2, 10); this.scene.add(dock);
+    const ship = this.assets.instantiate('atlas'); ship.name = 'ATLAS'; ship.position.set(-17, groundHeight(this.world, -17, -4), -4); this.scene.add(ship);
+    const zone = new THREE.Mesh(new THREE.RingGeometry(TRANSPORTER.radius - 0.11, TRANSPORTER.radius, 96),
+      new THREE.MeshBasicMaterial({ color: new THREE.Color('#efc67f').multiplyScalar(2.5), transparent: true, opacity: 0.9, side: THREE.DoubleSide, toneMapped: false, depthWrite: false }));
+    zone.rotation.x = -Math.PI / 2; zone.position.set(TRANSPORTER.x, groundHeight(this.world, 0, 0) + 0.15, TRANSPORTER.z); this.scene.add(zone);
+    const halo = new THREE.Mesh(new THREE.RingGeometry(TRANSPORTER.radius - 0.3, TRANSPORTER.radius + 0.18, 96),
+      new THREE.MeshBasicMaterial({ color: '#eab15e', transparent: true, opacity: 0.12, side: THREE.DoubleSide, toneMapped: false, depthWrite: false, blending: THREE.AdditiveBlending }));
+    halo.rotation.copy(zone.rotation); halo.position.copy(zone.position); this.scene.add(halo);
+    const name = new THREE.Sprite(labelMaterial('ATLAS / FRACHT', '#dfc392', 280)); name.scale.set(11.2, 2.56, 1);
+    name.position.set(-17, ship.position.y + 8, -17); this.scene.add(name);
   }
+
   render(s: State, muzzle: THREE.Vector3, running: boolean) {
+    const firstFrame = this.elapsed === null;
+    const dt = firstFrame ? 0 : Math.min(0.1, Math.max(0, s.elapsed - this.elapsed!)); this.elapsed = s.elapsed;
     for (const d of s.resources.deposits) {
-      const visual = this.deposits.get(d.id) ?? this.createDeposit(d);
-      const material = (visual.ore.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial;
-      const amount = d.remaining / R.unitsPerDeposit;
-      material.color.set('#393a3b').lerp(new THREE.Color(RESOURCES[d.resource].color), amount);
-      material.emissiveIntensity = amount * (d.resource === 'crystal' ? 0.65 + Math.sin(s.elapsed * 2.8) * 0.2 : 0.15 + Math.sin(s.elapsed * 1.8) * 0.05);
-      material.metalness = RESOURCES[d.resource].metalness * amount;
-      visual.label.visible = d.remaining > 0 && Math.hypot(d.x - s.x, d.z - s.z) < 65;
+      const visual = this.deposits.get(d.id)!, goal = d.remaining / R.unitsPerDeposit;
+      const amount = firstFrame ? goal : visual.amount + (goal - visual.amount) * (1 - Math.exp(-dt * 8));
+      const pulse = d.resource === 'crystal' ? 0.17 + Math.sin(s.elapsed * 2.1) * 0.035 : 0.025;
+      for (const material of [visual.patch.material, visual.chunks.material]) {
+        material.color.copy(this.exhaustedColor).lerp(this.colors.get(d.resource)!, amount);
+        material.emissiveIntensity = amount * pulse * (material === visual.patch.material ? 0.4 : 1);
+        material.metalness = RESOURCES[d.resource].metalness * (0.3 + amount * 0.7);
+      }
+      if (Math.abs(amount - visual.amount) > 0.00001) {
+        for (let i = 0; i < visual.pieces.length; i++) {
+          const piece = visual.pieces[i], scale = 0.16 + amount * 0.84, sink = (1 - amount) * 0.55;
+          this.dummy.position.copy(piece.position); this.dummy.quaternion.copy(piece.rotation); this.dummy.scale.copy(piece.scale).multiplyScalar(scale);
+          if (d.surface!.kind === 'ground') this.dummy.position.y -= sink;
+          else { this.dummy.position.x -= d.surface!.nx * sink; this.dummy.position.z -= d.surface!.nz * sink; }
+          this.dummy.updateMatrix(); visual.chunks.setMatrixAt(i, this.dummy.matrix);
+        }
+        visual.chunks.instanceMatrix.needsUpdate = true;
+      }
+      visual.amount = amount;
+      visual.label.visible = d.remaining > 0 && (d.id === s.resources.targetId || Math.hypot(d.x - s.x, d.z - s.z) < 18);
     }
     for (const id of RESOURCE_TYPES) {
-      if (RESOURCES[id].shape === 'spire') {
-        this.detailMaterials.get(id)!.emissiveIntensity = 0.7 + Math.sin(s.elapsed * 2.8) * 0.25;
-        this.oreMaterials.get(id)!.emissiveIntensity = 0.45 + Math.sin(s.elapsed * 2.8) * 0.15;
-      }
       const mesh = this.fragments.get(id)!; let count = 0;
       for (const f of s.resources.fragments) {
         if (f.resource !== id) continue;
-        const jump = f.age < R.ejectSeconds ? Math.sin(f.age / R.ejectSeconds * Math.PI) * 2 : 0;
-        this.dummy.position.set(f.x, groundHeight(this.world, f.x, f.z) + 1.2 + jump + Math.sin(s.elapsed * 3 + f.id) * 0.2, f.z);
-        this.dummy.rotation.set(0.3, s.elapsed * 1.7 + f.id, 0.4); this.dummy.scale.setScalar(RESOURCES[id].shape === 'spire' ? 0.27 : 0.38);
+        const jump = f.age < R.ejectSeconds ? Math.sin(f.age / R.ejectSeconds * Math.PI) * 1.7 : 0;
+        this.dummy.position.set(f.x, groundHeight(this.world, f.x, f.z) + 1.1 + jump + Math.sin(s.elapsed * 3 + f.id) * 0.16, f.z);
+        this.dummy.rotation.set(0.3, s.elapsed * 1.7 + f.id, 0.4); this.dummy.scale.setScalar(id === 'crystal' ? 0.35 : 0.48);
         this.dummy.updateMatrix(); mesh.setMatrixAt(count++, this.dummy.matrix);
       }
-      mesh.count = count; mesh.instanceMatrix.needsUpdate = true;
+      mesh.count = count; mesh.instanceMatrix.needsUpdate = count > 0;
     }
-    const target = s.resources.deposits.find(d => d.id === s.resources.targetId);
+    const target = s.resources.deposits.find(d => d.id === s.resources.targetId), active = !!target && s.resources.laserActive && !s.dead;
     this.target.visible = !!target && !s.dead;
-    this.beam.visible = this.glow.visible = this.sparks.visible = !!target && s.resources.laserActive && running && !s.dead;
+    // Rendering a paused frame uses the same simulation clock and retains its
+    // frozen mining effects. The running flag never advances an effect clock.
+    void running;
+    this.beam.visible = this.beamGlow.visible = this.sparks.visible = this.impactGlow.visible = active;
+    this.impactLight.intensity = active && this.high ? 12 : 0;
     if (!target) return;
-    const hit = s.resources.hitPoint ?? { ...target, y: groundHeight(this.world, target.x, target.z) + 0.4 }, y = hit.y;
-    this.target.position.set(hit.x, y + 0.25, hit.z);
-    this.target.material.color.set(RESOURCES[target.resource].color);
-    this.hit.set(hit.x, y, hit.z);
-    this.direction.subVectors(this.hit, muzzle);
-    for (const beam of [this.beam, this.glow]) {
-      beam.position.copy(muzzle).add(this.hit).multiplyScalar(0.5);
-      beam.scale.set(1, this.direction.length(), 1); beam.quaternion.setFromUnitVectors(this.up, this.direction.clone().normalize());
+    const hit = s.resources.hitPoint ?? { ...target, y: target.surface!.y + 0.4 }, surface = target.surface!;
+    this.hit.set(hit.x, hit.y, hit.z);
+    this.normal.copy(surface.kind === 'ground' ? terrainNormal(this.world, hit.x, hit.z) : this.direction.set(surface.nx, 0, surface.nz));
+    this.target.position.copy(this.hit).addScaledVector(this.normal, 0.15); this.target.quaternion.setFromUnitVectors(this.forward, this.normal);
+    this.target.material.color.copy(this.colors.get(target.resource)!);
+    this.direction.subVectors(this.hit, muzzle); const length = this.direction.length(); this.direction.normalize();
+    for (const beam of [this.beam, this.beamGlow]) {
+      beam.position.copy(muzzle).add(this.hit).multiplyScalar(0.5); beam.scale.set(1, length, 1); beam.quaternion.setFromUnitVectors(this.up, this.direction);
     }
+    this.impactGlow.position.copy(this.hit).addScaledVector(this.normal, 0.25);
+    this.impactGlow.scale.setScalar(2.5 + Math.sin(s.elapsed * 42) * 0.25);
+    this.impactLight.position.copy(this.hit).addScaledVector(this.normal, 1.2);
+    this.sparks.material.color.set(target.resource === 'crystal' ? '#aefff0' : '#ffcf7e');
     for (let i = 0; i < this.sparks.count; i++) {
-      const t = (s.elapsed * 2.5 + i / this.sparks.count) % 1, a = i * 2.4;
-      this.dummy.position.set(hit.x + Math.sin(a) * t * 2.6, y + 0.4 + Math.sin(t * Math.PI) * 2, hit.z + Math.cos(a) * t * 2.6);
-      this.dummy.scale.setScalar(1 - t); this.dummy.updateMatrix(); this.sparks.setMatrixAt(i, this.dummy.matrix);
+      const t = (s.elapsed * 2.7 + i / this.sparks.count) % 1, a = i * 2.399963;
+      const spread = (0.5 + Math.sin(i * 5.3) * 0.2) * t * 3.4;
+      this.dummy.position.copy(this.hit).addScaledVector(this.normal, 0.2 + t * 2.1);
+      this.dummy.position.x += Math.sin(a) * spread; this.dummy.position.z += Math.cos(a) * spread;
+      this.dummy.position.y += Math.sin(t * Math.PI) * 1.8;
+      this.dummy.rotation.set(a, a * 1.2, a * 0.7); this.dummy.scale.set(0.7 * (1 - t), (2.4 - t) * (1 - t), 0.7 * (1 - t));
+      this.dummy.updateMatrix(); this.sparks.setMatrixAt(i, this.dummy.matrix);
     }
     this.sparks.instanceMatrix.needsUpdate = true;
   }

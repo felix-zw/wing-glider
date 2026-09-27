@@ -1,0 +1,36 @@
+Google Inc. (NVIDIA)
+ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)
+1920×1080 · high · warmup 3s
+
+calm-flight
+56.6 FPS · p95 18.10 ms · longest 18.7 ms
+321 draws · 1.929.261 triangles · GPU objects 91 geom / 35 tex
+BELOW TARGET: ≥60 average FPS / p95 <20ms
+
+aster-mining
+56.6 FPS · p95 18.10 ms · longest 18.7 ms
+284 draws · 1.871.136 triangles · GPU objects 122 geom / 34 tex
+BELOW TARGET: ≥60 average FPS / p95 <20ms
+
+sheltered-storm
+56.6 FPS · p95 18.10 ms · longest 18.6 ms
+308 draws · 1.946.453 triangles · GPU objects 84 geom / 32 tex
+BELOW TARGET: ≥60 average FPS / p95 <20ms
+
+belt-mining
+56.6 FPS · p95 18.10 ms · longest 18.7 ms
+214 draws · 507.038 triangles · GPU objects 66 geom / 34 tex
+BELOW TARGET: ≥60 average FPS / p95 <20ms
+
+RAF-BASELINE · ohne Simulation und WebGL-Renderaufrufe
+1920×1080 · high
+
+RAF + Statusupdates
+56.61 FPS · p95 18.10 ms · max 18.60 ms
+567 Frames / 10.017 s
+
+RAF ohne DOM-Updates
+56.59 FPS · p95 18.10 ms · max 18.60 ms
+566 Frames / 10.002 s
+
+Diagnose des Browser-/Compositor-Takts. Das 60-FPS-Ziel und die Spielmessungen bleiben unverändert.

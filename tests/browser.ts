@@ -8,7 +8,14 @@ const world = new World(document.getElementById('viewport')!);
 const controls = new Controls(world.renderer.domElement, () => {});
 const output = document.getElementById('results')!;
 let state = createState();
-world.reset(state); world.render(state, 1 / 60, 0);
+const runButton = document.getElementById('run') as HTMLButtonElement;
+runButton.disabled = true;
+output.textContent = 'Loading shared GLB models and compressed textures…';
+world.ready.then(() => {
+  world.setQuality('high'); world.reset(state); world.render(state, 1 / 60, 0);
+  output.textContent = 'Ready. Tests use controlled positions and the real simulation, keyboard controls and renderer.';
+  runButton.disabled = false;
+}).catch(error => { output.textContent = `ASSET LOAD FAILED: ${String(error)}`; });
 const key = (code: string, down: boolean, repeat = false) => window.dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { code, repeat }));
 function check(condition: unknown, message: string) { if (!condition) throw new Error(message); output.textContent += `\nPASS ${message}`; }
 function step(seconds: number, aim: number | null = state.turret) {
@@ -29,10 +36,52 @@ function placeNear(d: Deposit) {
   state.x = d.x + d.surface!.nx * 5; state.z = d.z + d.surface!.nz * 5; state.speed = 0;
   state.turret = Math.atan2(d.x - state.x, -(d.z - state.z));
 }
+async function checkDisposeDuringAssetLoad() {
+  const host = document.createElement('div'); host.hidden = true; document.body.append(host);
+  let probe: World | undefined;
+  let timer: number | undefined;
+  let onProgress: EventListener | undefined;
+  try {
+    probe = new World(host);
+    const canvas = probe.renderer.domElement;
+    let settled = false, disposedWhilePending = false, secondDisposeSucceeded = false;
+    let disposalError: unknown;
+    // Install both handlers immediately: cancellation deliberately rejects ready.
+    const completion = probe.ready.then(() => { settled = true; }, () => { settled = true; });
+    onProgress = event => {
+      const { loaded, total } = (event as CustomEvent<{ loaded: number; total: number }>).detail;
+      // There are only two GLBs. At completion #3 at least one texture has been
+      // decoded, while more remain pending: exercise the active KTX2 worker path,
+      // not just disposal before network requests or worker setup have started.
+      if (loaded < 3 || loaded >= total || disposedWhilePending) return;
+      disposedWhilePending = !settled;
+      try { probe!.dispose(); probe!.dispose(); secondDisposeSucceeded = true; }
+      catch (error) { disposalError = error; }
+    };
+    canvas.addEventListener('asset-progress', onProgress);
+    const timeout = new Promise<never>((_, reject) => {
+      timer = window.setTimeout(() => reject(new Error('Disposed World.ready did not settle within 15 seconds')), 15_000);
+    });
+    await Promise.race([completion, timeout]);
+    if (disposalError) throw disposalError;
+    check(disposedWhilePending, 'World disposed after texture decoding began, before asset loading settled');
+    check(settled, 'Disposed World.ready settles within 15 seconds');
+    check(!canvas.isConnected && host.childElementCount === 0, 'Disposal removes the loading world canvas');
+    check(secondDisposeSucceeded, 'Second dispose during asset loading is harmless');
+    check(probe.assets.surfaces.size === 0, 'Late decoded surface textures are released after cancellation');
+    check(!probe.scene.getObjectByName('mining_turret'), 'Cancelled loading does not instantiate a late speeder');
+  } finally {
+    if (timer !== undefined) window.clearTimeout(timer);
+    if (probe && onProgress) probe.renderer.domElement.removeEventListener('asset-progress', onProgress);
+    probe?.dispose(); host.remove();
+  }
+}
 document.getElementById('run')!.addEventListener('click', async () => {
   const button = document.getElementById('run') as HTMLButtonElement; button.disabled = true;
   output.textContent = 'Running controlled browser integration scenario…';
   try {
+    await world.ready;
+    await checkDisposeDuringAssetLoad();
     state = createState(); controls.clear();
     // Validate edge-triggered keyboard input, including repeat and release behavior.
     key('KeyE', true); check(controls.read(null).unloadPressed, 'E produces one unload press');
@@ -109,15 +158,18 @@ document.getElementById('run')!.addEventListener('click', async () => {
     state = createState('belt'); world.reset(state); state.x = -10; state.z = 80;
     if (state.environment.kind === 'space') state.environment.asteroids = [{ id: 0, x: -10, z: 65, radius: 2, vx: 0, vz: 12, rotation: 0, respawns: 0 }];
     step(1.5); check(state.health < 100 && state.lastDamage === 'asteroid', 'Moving asteroids collide with the ship');
-    const memory = new Map<LevelId, { geometries: number; textures: number }>();
-    for (let i = 0; i < 8; i++) {
-      const id: LevelId = i % 2 === 0 ? 'aster' : 'belt'; state = createState(id); world.reset(state); world.render(state, 1 / 60, 0);
+    const memory = new Map<string, { geometries: number; textures: number }>();
+    for (let i = 0; i < 16; i++) {
+      const id: LevelId = i % 2 === 0 ? 'aster' : 'belt', quality = i % 4 < 2 ? 'high' : 'standard';
+      state = createState(id); world.setQuality(quality); world.reset(state); world.render(state, 1 / 60, 0);
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      world.render(state, 1 / 60, 0);
       check(state.resources.deposits.every(d => d.id.startsWith(id)), `${id}: no previous-level deposits`);
-      const usage = { ...world.renderer.info.memory }, baseline = memory.get(id);
-      if (baseline) check(usage.geometries === baseline.geometries && usage.textures === baseline.textures, `${id}: GPU geometry and texture counts stable after switch`);
-      else memory.set(id, usage);
+      const usage = { ...world.renderer.info.memory }, key = `${id}/${quality}`, baseline = memory.get(key);
+      if (baseline) check(usage.geometries === baseline.geometries && usage.textures === baseline.textures, `${key}: GPU geometry and texture counts stable after switch`);
+      else memory.set(key, usage);
     }
-    state = createState(); world.reset(state); world.render(state, 1 / 60, 0);
+    state = createState(); world.setQuality('high'); world.reset(state); world.render(state, 1 / 60, 0);
     const aimStart = performance.now();
     for (let i = 0; i < 30; i++) world.mouseAim({ x: 0.05, y: 0.25 }, state);
     output.textContent += `\nTerrain aim: ${((performance.now() - aimStart) / 30).toFixed(2)} ms/sample`;

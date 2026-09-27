@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "performance": null,
+  "schedulerBaseline": {
+    "createdAt": "2026-09-27T20:34:19.619Z",
+    "quality": "high",
+    "drawingBuffer": {
+      "width": 1920,
+      "height": 1080
+    },
+    "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "gpuIdentification": "Browser-reported adapter name; hardware model was not independently verified.",
+    "warmupSeconds": 1,
+    "measurementSeconds": 10,
+    "simulationAndRenderingDisabled": true,
+    "samples": [
+      {
+        "mode": "raf-with-dom",
+        "frames": 567,
+        "measuredSeconds": 10.015300000000003,
+        "averageFps": 56.613381526264796,
+        "p95FrameMs": 18.10000000000582,
+        "longestFrameMs": 18.60000000000582
+      },
+      {
+        "mode": "raf-only",
+        "frames": 568,
+        "measuredSeconds": 10.013600000000006,
+        "averageFps": 56.722856914596115,
+        "p95FrameMs": 18.10000000000582,
+        "longestFrameMs": 18.60000000000582
+      }
+    ],
+    "status": "completed"
+  }
+}

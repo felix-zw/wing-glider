@@ -1,12 +1,77 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { getLevelWorld, groundHeight, type LevelId } from './levels';
+import { getLevelWorld, getSolidFootprint, groundHeight, type LevelId, type Solid } from './levels';
 import { COLLISION, CONFIG, SPACE } from './config';
-import { contains, clearLine, sweep } from './collision';
+import { contains, clearLine, moveOutside, sweep } from './collision';
 import { createState, advance, neutralInput, isProtected } from './simulation';
-import { advanceResources, inventoryTotal, selectDeposit, RESOURCES, RESOURCE_TYPES, unloadResources } from './resources';
+import { advanceResources, inventoryTotal, selectDeposit, surfacePoint, RESOURCES, RESOURCE_TYPES, unloadResources } from './resources';
 import { applyMissionEvent } from './missions';
 import { impact } from './hazards';
+import { findRoute } from './navigation';
+
+const diamond: Solid = { id: 'diamond', kind: 'asteroid', x: 10, z: -5, radius: 10, height: 8,
+  footprint: [{ x: 0, z: -10 }, { x: 10, z: 0 }, { x: 0, z: 10 }, { x: -10, z: 0 }] };
+
+test('polygon collisions use rendered facets and keep empty bounding-box corners flyable', () => {
+  assert.deepEqual(getSolidFootprint(diamond), [{ x: 10, z: -15 }, { x: 20, z: -5 }, { x: 10, z: 5 }, { x: 0, z: -5 }]);
+  assert.ok(contains(diamond, { x: 10, z: -5 }));
+  assert.ok(!contains(diamond, { x: 18, z: 3 }, 2));
+  assert.equal(sweep({ x: 16, z: 3 }, { x: 20, z: 3 }, [diamond], 2), null);
+  const hit = sweep({ x: -30, z: -5 }, { x: 50, z: -5 }, [diamond], 2)!;
+  assert.ok(hit); assert.ok(Math.abs(hit.x + 2) < 1e-7); assert.ok(Math.abs(hit.nx + 1) < 1e-7);
+  assert.equal(getSolidFootprint({ id: 'shield', kind: 'asteroid', x: 0, z: 0, radius: 22, height: 10 }), null);
+});
+
+test('rounded polygon corner sweeps preserve real gaps and stop grazing impacts', () => {
+  const box: Solid = { id: 'box', kind: 'cliff', x: 0, z: 0, halfX: 5, halfZ: 5, height: 10 };
+  assert.ok(!contains(box, { x: 6.5, z: 6.5 }, 2), 'the square expanded AABB is not the collision shape');
+  const hit = sweep({ x: 8, z: 6 }, { x: 3, z: 6 }, [box], 2)!;
+  assert.ok(Math.abs(hit.x - (5 + Math.sqrt(3))) < 1e-7);
+  assert.ok(Math.abs(hit.nz - 0.5) < 1e-7);
+  assert.equal(sweep({ x: 8, z: 7 }, { x: 3, z: 7 }, [box], 2), null, 'exact tangent motion stays free');
+  const separation = moveOutside({ x: 6, z: 6 }, { x: 6, z: 6 }, [box], 2);
+  assert.ok(separation.contact); assert.ok(!contains(box, separation.position, 2));
+});
+
+test('starts-inside separation handles polygon centres and outward travel', () => {
+  for (const solid of [diamond, ...getLevelWorld().solids]) {
+    for (const to of [solid, { x: solid.x + 100, z: solid.z + 100 }]) {
+      const result = moveOutside(solid, to, [solid], COLLISION.shipRadius);
+      assert.equal(result.contact?.t, 0); assert.ok(!contains(solid, result.position, COLLISION.shipRadius));
+    }
+  }
+});
+
+test('navigation uses polygon corners and every returned segment clears the ship radius', () => {
+  const world = { ...getLevelWorld('belt'), solids: [diamond] };
+  const from = { x: -20, z: -5 }, goal = { x: 40, z: -5 }, route = findRoute(world, from, goal);
+  assert.ok(route.length > 1); assert.deepEqual(route.at(-1), goal);
+  let previous = from;
+  for (const next of route) { assert.equal(sweep(previous, next, world.solids, COLLISION.shipRadius + 0.2), null); previous = next; }
+  const gapFrom = { x: 16, z: 4 }, gapGoal = { x: 22, z: 4 };
+  assert.deepEqual(findRoute(world, gapFrom, gapGoal), [gapGoal]);
+});
+
+test('all static ore strip samples remain attached to the actual collision facet', () => {
+  for (const id of ['aster', 'belt'] as const) {
+    const world = getLevelWorld(id);
+    for (const solid of world.solids) {
+      assert.ok(solid.footprint && Object.isFrozen(solid.footprint));
+      assert.ok(solid.footprint.every(Object.isFrozen));
+    }
+    for (const deposit of world.deposits.filter(d => d.surface?.kind !== 'ground')) {
+      const host = world.solids.find(s => s.id === deposit.structureId)!, surface = deposit.surface!;
+      for (const offset of [-0.5, -0.25, 0, 0.25, 0.5]) {
+        const p = surfacePoint(deposit, offset * surface.width, world);
+        assert.ok(!contains(host, p), `${deposit.id}: ore sample inside body`);
+        const inside = { x: p.x - surface.nx * 0.3, z: p.z - surface.nz * 0.3 };
+        assert.ok(contains(host, inside), `${deposit.id}: ore detached from its facet`);
+        const hit = sweep(p, inside, [host])!;
+        assert.ok(Math.abs(hit.t - 0.5) < 1e-6, `${deposit.id}: expected 0.15m surface offset`);
+      }
+    }
+  }
+});
 
 for (const id of ['aster', 'belt'] as const) {
   test(`${id}: world definitions are immutable, have 18 attached veins, and safe spawn/base`, () => {

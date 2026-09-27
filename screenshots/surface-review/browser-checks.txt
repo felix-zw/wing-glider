@@ -1,0 +1,93 @@
+Running controlled browser integration scenario…
+PASS World disposed after texture decoding began, before asset loading settled
+PASS Disposed World.ready settles within 15 seconds
+PASS Disposal removes the loading world canvas
+PASS Second dispose during asset loading is harmless
+PASS Late decoded surface textures are released after cancellation
+PASS Cancelled loading does not instantiate a late speeder
+PASS E produces one unload press
+PASS Held E does not repeat
+PASS Keyboard repeat does not unload
+PASS KeyX activates laser
+PASS KeyX releases laser
+PASS ShiftLeft activates laser
+PASS ShiftLeft releases laser
+PASS ShiftRight activates laser
+PASS ShiftRight releases laser
+PASS Input clear cancels held and queued actions
+PASS Standard gamepad RB mines and Y unloads
+PASS Held gamepad Y does not repeat
+PASS Gamepad bumper release stops mining
+PASS Gamepad Y rearms after release
+
+LEVEL: aster
+PASS ferrite: 12 units mined with keyboard laser
+PASS ferrite: 12 units mined with keyboard laser
+PASS ferrite: 6 units mined with keyboard laser
+PASS Cargo reaches 30 units
+PASS Onboard resources do not count as delivered
+PASS Full cargo leaves mined fragments in the world
+PASS E outside loading zone cannot deliver
+PASS First delivery credits 30 ferrite
+PASS Leftover fragment is collected after unloading
+PASS copper: 12 units mined with keyboard laser
+PASS copper: 8 units mined with keyboard laser
+PASS crystal: 10 units mined with keyboard laser
+PASS Second mixed load contains 20 copper and 10 crystals
+PASS All delivery objectives complete
+PASS All deliveries, including surplus, retained in ATLAS
+PASS Continue mining and delivering after completion
+PASS Zero-time pause freezes gameplay
+
+LEVEL: belt
+PASS ferrite: 12 units mined with keyboard laser
+PASS ferrite: 12 units mined with keyboard laser
+PASS ferrite: 6 units mined with keyboard laser
+PASS Cargo reaches 30 units
+PASS Onboard resources do not count as delivered
+PASS Full cargo leaves mined fragments in the world
+PASS E outside loading zone cannot deliver
+PASS First delivery credits 30 ferrite
+PASS Leftover fragment is collected after unloading
+PASS copper: 12 units mined with keyboard laser
+PASS copper: 8 units mined with keyboard laser
+PASS crystal: 10 units mined with keyboard laser
+PASS Second mixed load contains 20 copper and 10 crystals
+PASS All delivery objectives complete
+PASS All deliveries, including surplus, retained in ATLAS
+PASS Continue mining and delivering after completion
+PASS Zero-time pause freezes gameplay
+PASS Aster walls stop the ship and cause impact damage
+PASS Moving asteroids collide with the ship
+PASS aster: no previous-level deposits
+PASS belt: no previous-level deposits
+PASS aster: no previous-level deposits
+PASS belt: no previous-level deposits
+PASS aster: no previous-level deposits
+PASS aster/high: GPU geometry and texture counts stable after switch
+PASS belt: no previous-level deposits
+PASS belt/high: GPU geometry and texture counts stable after switch
+PASS aster: no previous-level deposits
+PASS aster/standard: GPU geometry and texture counts stable after switch
+PASS belt: no previous-level deposits
+PASS belt/standard: GPU geometry and texture counts stable after switch
+PASS aster: no previous-level deposits
+PASS aster/high: GPU geometry and texture counts stable after switch
+PASS belt: no previous-level deposits
+PASS belt/high: GPU geometry and texture counts stable after switch
+PASS aster: no previous-level deposits
+PASS aster/standard: GPU geometry and texture counts stable after switch
+PASS belt: no previous-level deposits
+PASS belt/standard: GPU geometry and texture counts stable after switch
+PASS aster: no previous-level deposits
+PASS aster/high: GPU geometry and texture counts stable after switch
+PASS belt: no previous-level deposits
+PASS belt/high: GPU geometry and texture counts stable after switch
+PASS aster: no previous-level deposits
+PASS aster/standard: GPU geometry and texture counts stable after switch
+PASS belt: no previous-level deposits
+PASS belt/standard: GPU geometry and texture counts stable after switch
+Terrain aim: 0.07 ms/sample
+PASS Restart clears cargo, storage and mission
+
+ALL BROWSER CHECKS PASSED

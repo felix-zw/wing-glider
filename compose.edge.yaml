@@ -1,0 +1,11 @@
+services:
+  web:
+    networks:
+      home-edge:
+        aliases:
+          - wing-glider-origin
+
+networks:
+  home-edge:
+    external: true
+    name: home-edge-wing-glider
