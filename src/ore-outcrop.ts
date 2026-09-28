@@ -66,7 +66,8 @@ export function createOreOutcrop(world: LevelWorld, assets: AssetLibrary, d: Dep
   const point: SurfacePoint=(u,v,lift=0)=>{
     const along=u*surface.width*.5, outward=ground?v*2.1:0;
     const x=d.x-surface.nz*along+surface.nx*outward, z=d.z+surface.nx*along+surface.nz*outward;
-    const p=new THREE.Vector3(x,ground?groundHeight(world,x,z)+.035:surface.y+.28+(v+1)*2.1,z);
+    const base=surface.kind==='wall'?groundHeight(world,x,z)+.3:surface.y;
+    const p=new THREE.Vector3(x,ground?groundHeight(world,x,z)+.035:base+.28+(v+1)*2.1,z);
     return p.addScaledVector(ground?terrainNormal(world,x,z):normal,lift);
   };
   const host=new THREE.Color(ground?'#a49b80':world.definition.environment==='space'?'#8b99a7':'#cbbda4');

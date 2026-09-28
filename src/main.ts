@@ -1,4 +1,5 @@
 import './style.css';
+import './touch-controls.css';
 import { World } from './world';
 import { Controls } from './input';
 import { advance, CONFIG, createState, isProtected, nearestShelter, phaseDuration } from './simulation';
@@ -7,6 +8,7 @@ import { RESOURCE_TYPES, RESOURCES, baseDistance, inventoryTotal } from './resou
 import { FIRST_MISSION, objectiveCounts } from './missions';
 import { LEVELS, getLevelWorld, groundHeight, type LevelId } from './levels';
 import { shelterRoute } from './navigation';
+import { GameAudio } from './audio';
 
 let objectives = objectiveCounts(FIRST_MISSION.objective);
 const objectiveMarkup = () => objectives.map(o => `<div class="objective" style="--ore:${o.resource ? RESOURCES[o.resource].color : '#c5d7b3'}"><div><span><i class="ore-dot"></i>${o.label}</span><strong id="goal-${o.id}">0 / ${o.amount}</strong></div><div class="track"><i id="goal-fill-${o.id}"></i></div></div>`).join('');
@@ -34,18 +36,20 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <section class="navigation"><div class="map-heading"><span class="eyebrow">GELÄNDERADAR</span><span id="coordinates">025 / 036</span></div><canvas id="minimap" width="240" height="200" aria-label="Karte mit Schutzmulden, Rohstoffen, ATLAS und Fahrzeugposition"></canvas><div class="map-footer"><span>○ SCHUTZ · ◇ ERZ · ▣ ATLAS</span><span>420 × 420 M</span></div></section>
   <section class="interaction" aria-label="Abbau und Entladen"><div class="interaction-top"><strong id="interaction-title">ERZ-LASER BEREIT</strong><span id="base-distance"></span></div><p id="interaction-hint">Auf ein Vorkommen zielen · X oder Shift halten.</p><div class="track"><i id="mining-fill"></i></div></section>
   <div id="mission-success" role="status" hidden>AUFTRAG ERFÜLLT <span>ATLAS ist versorgt. Deine Expedition geht weiter.</span></div>
-  <footer><div class="controls keyboard"><span><kbd>W</kbd> Schub</span><span><kbd>A</kbd><kbd>D</kbd> Lenken</span><span><kbd>SPACE</kbd> Bremse</span><span><kbd>MAUS</kbd> Zielen</span><span><kbd>X / SHIFT</kbd> Abbau</span><span><kbd>E</kbd> Entladen</span></div><div class="controls gamepad" hidden><span><kbd>RT</kbd> Schub</span><span><kbd>LS</kbd> Lenken</span><span><kbd>LT</kbd> Bremse</span><span><kbd>RS</kbd> Zielen</span><span><kbd>RB</kbd> Abbau</span><span><kbd>Y</kbd> Entladen</span></div><span id="input-device">TASTATUR + MAUS <i class="live-dot"></i></span></footer>
-  <div id="overlay" role="dialog" aria-modal="true" aria-labelledby="dialog-title" hidden><section class="dialog"><p class="eyebrow" id="dialog-kicker">FLUG UNTERBROCHEN</p><h2 id="dialog-title">Kurze Verschnaufpause.</h2><p id="dialog-body">Dein Speeder wartet auf dich.</p><div class="quality-setting"><label for="quality">DARSTELLUNG</label><select id="quality" aria-describedby="quality-hint"><option value="high">Hoch</option><option value="standard">Standard</option></select><p id="quality-hint">Volle Landschaftsdetails, Licht und Effekte.</p></div><button id="resume" class="primary">Weiterfliegen <span>↗</span></button><button id="restart">Level neu starten</button><button id="choose-level">Level wählen</button></section></div>
+  <footer><div class="controls keyboard"><span><kbd>W</kbd> Schub</span><span><kbd>A</kbd><kbd>D</kbd> Lenken</span><span><kbd>S / ↓ / SPACE</kbd> Bremse / zurück</span><span><kbd>MAUS</kbd> Zielen</span><span><kbd>X / SHIFT</kbd> Abbau</span><span><kbd>E</kbd> Entladen</span></div><div class="controls gamepad" hidden><span><kbd>RT</kbd> Schub</span><span><kbd>LS</kbd> Lenken</span><span><kbd>LT</kbd> Bremse / zurück</span><span><kbd>RS</kbd> Zielen</span><span><kbd>RB</kbd> Abbau</span><span><kbd>Y</kbd> Entladen</span></div><span id="input-device">TASTATUR + MAUS <i class="live-dot"></i></span></footer>
+  <div id="overlay" role="dialog" aria-modal="true" aria-labelledby="dialog-title" hidden><section class="dialog"><p class="eyebrow" id="dialog-kicker">FLUG UNTERBROCHEN</p><h2 id="dialog-title">Kurze Verschnaufpause.</h2><p id="dialog-body">Dein Speeder wartet auf dich.</p><div class="quality-setting"><label for="quality">DARSTELLUNG</label><select id="quality" aria-describedby="quality-hint"><option value="high">Hoch</option><option value="standard">Standard</option></select><p id="quality-hint">Volle Landschaftsdetails, Licht und Effekte.</p></div><div class="audio-setting"><label for="volume">LAUTSTÄRKE <output id="volume-value" for="volume">55%</output></label><input id="volume" type="range" min="0" max="100" step="5" value="55" aria-label="Lautstärke"><button id="mute" type="button" aria-pressed="false">Ton ausschalten</button></div><button id="resume" class="primary">Weiterfliegen <span>↗</span></button><button id="restart">Level neu starten</button><button id="choose-level">Level wählen</button></section></div>
   <div id="level-select" role="dialog" aria-modal="true" aria-label="Level auswählen" hidden><section class="level-dialog"><p class="eyebrow">WING GLIDER / EXPEDITIONEN</p><h2>Wohin führt dein Flug?</h2><p class="level-intro">Zwei Welten. Ein Auftrag: wertvolle Rohstoffe zu ATLAS bringen.</p><div class="level-cards">${Object.values(LEVELS).map((level, index) => `<button class="level-card ${level.id}" data-level="${level.id}" aria-label="${level.name} starten"><div class="level-art" aria-hidden="true"><span class="sector-number">0${index + 1}</span><i></i><i></i><i></i><b class="orbit-line"></b></div><small>${level.subtitle}</small><strong>${level.name}</strong><p>${level.description}</p><span>EXPEDITION STARTEN <b>↗</b></span></button>`).join('')}</div><p class="level-note">Jeder Start beginnt mit leerer Fracht und einem neuen Auftrag. Die laufende Expedition wird zurückgesetzt.</p><button id="cancel-level" hidden>Zurück zur Expedition</button></section></div>
   <div id="loading" role="dialog" aria-modal="true" aria-labelledby="loading-title"><section class="loading-dialog"><span class="loading-mark" aria-hidden="true">≋</span><p class="eyebrow">WING GLIDER / FLUGVORBEREITUNG</p><h2 id="loading-title">Deine Expedition wird vorbereitet.</h2><p id="loading-label" role="status" aria-live="polite">Fahrzeug und Welten werden geladen.</p><div id="loading-progress" role="progressbar" aria-label="Assets laden" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="loading-fill"></i></div><span id="loading-count">VERBINDUNG ZU ATLAS</span><button id="retry-loading" class="primary" hidden>Erneut versuchen <span>↗</span></button></section></div>
 `;
 
 const el = (id: string) => document.getElementById(id)!;
+const audio = new GameAudio();
 let state = createState();
 let paused = true, choosing = true, hasExpedition = false, ready = false, graphicsLost = false;
 let escapeRoute: ReturnType<typeof shelterRoute> | null = null, routeTime = -1;
 document.body.dataset.ui = 'loading';
 function loadingError(title: string, message: string) {
+  audio.pause();
   ready = false; paused = true;
   document.body.dataset.ui = 'loading';
   el('loading').hidden = false; el('level-select').hidden = true; el('overlay').hidden = true;
@@ -80,7 +84,24 @@ function applyQuality() {
 quality.addEventListener('change', applyQuality);
 quality.addEventListener('keydown', event => { if (event.key !== 'Escape' && event.key !== 'Tab') event.stopPropagation(); });
 applyQuality();
+const volume=el('volume') as HTMLInputElement;
+function updateAudioSetting() {
+  volume.value=String(Math.round(audio.volume*100));
+  el('volume-value').textContent=`${volume.value}%`;
+  el('mute').textContent=audio.muted?'Ton einschalten':'Ton ausschalten';
+  el('mute').setAttribute('aria-pressed',String(audio.muted));
+}
+volume.addEventListener('input',()=>{audio.setVolume(Number(volume.value)/100);updateAudioSetting();});
+volume.addEventListener('keydown',event=>{if(event.key!=='Escape'&&event.key!=='Tab')event.stopPropagation();});
+el('mute').addEventListener('click',()=>{audio.setMuted(!audio.muted);updateAudioSetting();});
+updateAudioSetting();
+const unlockAudio=()=>{void audio.unlock();};
+window.addEventListener('pointerdown',unlockAudio);
+window.addEventListener('keydown',unlockAudio);
+window.addEventListener('pagehide',event=>{controls.clear();if(event.persisted)audio.pause();else {audio.dispose();controls.dispose();}});
 function showDialog() {
+  if(paused||choosing||state.dead)audio.pause();
+  controls.setActive(ready&&!graphicsLost&&!paused&&!choosing&&!state.dead&&!document.hidden);
   if (!ready || graphicsLost) return;
   document.body.dataset.ui = choosing ? 'choosing' : paused || state.dead ? 'paused' : 'flying';
   el('level-select').hidden = !choosing;
@@ -89,7 +110,7 @@ function showDialog() {
   el('overlay').hidden = choosing || (!paused && !state.dead);
   el('dialog-kicker').textContent = state.dead ? 'SIGNAL VERLOREN' : 'FLUG UNTERBROCHEN';
   el('dialog-title').textContent = state.dead ? state.lastDamage === 'storm' ? 'Der Sturm war stärker.' : state.lastDamage === 'wall' ? 'Aufprall an der Felswand.' : 'Kollision im Asteroidengürtel.' : 'Kurze Verschnaufpause.';
-  el('dialog-body').textContent = state.dead ? `${Math.floor(state.distance)} Meter erkundet · ${inventoryTotal(state.resources.storage)} Einheiten geliefert. ${state.environment.kind === 'space' ? 'Achte auf bewegte Asteroiden. Bei ATLAS bist du geschützt.' : 'Nutze die Durchgänge zwischen den Felswänden und suche rechtzeitig Schutz.'}` : 'Dein Speeder wartet auf dich. Mit Escape geht es weiter.';
+  el('dialog-body').textContent = state.dead ? `${Math.floor(state.distance)} Meter erkundet · ${inventoryTotal(state.resources.storage)} Einheiten geliefert. ${state.environment.kind === 'space' ? 'Achte auf bewegte Asteroiden. Bei ATLAS bist du geschützt.' : 'Nutze die Durchgänge zwischen den Felswänden und suche rechtzeitig Schutz.'}` : 'Dein Speeder wartet auf dich.';
   el('resume').hidden = state.dead;
   el('pause').textContent = paused ? '▷ WEITER' : 'Ⅱ PAUSE';
   el('pause').setAttribute('aria-label', paused ? 'Spiel fortsetzen' : 'Spiel pausieren');
@@ -100,7 +121,7 @@ el('pause').addEventListener('click', togglePause);
 el('resume').addEventListener('click', togglePause);
 function startLevel(id: LevelId) {
   if (!ready || graphicsLost) return;
-  state = createState(id); paused = false; choosing = false; hasExpedition = true; controls.clear(); world.reset(state);
+  state = createState(id); paused = false; choosing = false; hasExpedition = true; controls.clear(); world.reset(state); audio.reset(state);
   (document.activeElement as HTMLElement)?.blur();
   escapeRoute = null; routeTime = -1;
   objectives = objectiveCounts(LEVELS[id].mission.objective); el('objectives').innerHTML = objectiveMarkup();
@@ -121,14 +142,14 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden && !state.dead) { paused = true; showDialog(); }
 });
 world.renderer.domElement.addEventListener('webglcontextlost', e => {
-  e.preventDefault(); graphicsLost = true; controls.clear();
+  e.preventDefault(); graphicsLost = true; controls.clear(); controls.setActive(false);
   loadingError('Grafikverbindung unterbrochen.', 'Lade die Expedition neu, um die 3D-Darstellung wiederherzustellen.');
 });
 document.addEventListener('keydown', event => {
   if (event.key !== 'Tab') return;
   const dialog = ['loading', 'level-select', 'overlay'].map(el).find(element => !element.hidden);
   if (!dialog) return;
-  const focusable = Array.from(dialog.querySelectorAll<HTMLElement>('button, select')).filter(element => !element.hidden && !(element as HTMLButtonElement).disabled);
+  const focusable = Array.from(dialog.querySelectorAll<HTMLElement>('button, select, input')).filter(element => !element.hidden && !(element as HTMLButtonElement).disabled);
   if (!focusable.length) { event.preventDefault(); return; }
   const first = focusable[0], last = focusable[focusable.length - 1];
   if (event.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
@@ -208,9 +229,9 @@ function drawMap() {
 function updateHud(thrust: number, brake: number) {
   updateResourceHud();
   const protectedNow = isProtected(state), timeLeft = Math.ceil(phaseDuration(state.phase) - state.phaseTime);
-  el('speed').textContent = String(Math.round(state.speed * 3.6)).padStart(3, '0');
-  el('drive-state').textContent = brake ? 'BREMSE' : thrust ? 'SCHUB' : state.speed > 0.1 ? 'GLEITFLUG' : 'BEREIT';
-  el('speed-fill').style.width = `${state.speed / CONFIG.maxSpeed * 100}%`;
+  el('speed').textContent = String(Math.round(Math.abs(state.speed) * 3.6)).padStart(3, '0');
+  el('drive-state').textContent = state.speed<-.1 ? 'RÜCKWÄRTS' : brake ? 'BREMSE' : thrust ? 'SCHUB' : state.speed > 0.1 ? 'GLEITFLUG' : 'BEREIT';
+  el('speed-fill').style.width = `${Math.abs(state.speed) / CONFIG.maxSpeed * 100}%`;
   el('health-value').textContent = `${Math.ceil(state.health)}%`;
   el('health-fill').style.width = `${state.health}%`;
   el('health-fill').style.background = state.health < 35 ? '#ed956f' : '#c5d7b3';
@@ -241,13 +262,13 @@ function updateHud(thrust: number, brake: number) {
   if (!returning && state.phase !== 'calm' && escapeRoute?.points.length && !protectedNow) destination = { ...escapeRoute.points[0], name: escapeRoute.shelter.name, radius: 12 };
   const d = Math.hypot(destination.x - state.x, destination.z - state.z);
   el('guide-name').textContent = returning ? 'ATLAS / FRACHT ABGEBEN' : protectedNow ? 'GESCHÜTZTER BEREICH' : `SCHUTZMULDE ${destination.name}`;
-  el('guide-distance').textContent = returning ? `${Math.round(d)} m · ${controls.gamepadConnected ? 'Y' : 'E'} zum Entladen` : protectedNow ? 'Bremsen & Sturm abwarten' : `${Math.round(d)} m · Schutz suchen`;
+  el('guide-distance').textContent = returning ? `${Math.round(d)} m · ${controls.touch.enabled ? 'Entladen antippen' : `${controls.gamepadConnected ? 'Y' : 'E'} zum Entladen`}` : protectedNow ? 'Bremsen & Sturm abwarten' : `${Math.round(d)} m · Schutz suchen`;
   if (!returning && !protectedNow && state.phase !== 'calm' && (escapeRoute?.points.length ?? 0) > 1) el('guide-distance').textContent = `${Math.round(d)} m · Durchgang folgen`;
   el('guide-arrow').style.transform = `rotate(${Math.atan2(destination.x - state.x, -(destination.z - state.z))}rad)`;
   el('shelter-guide').hidden = space ? inventoryTotal(state.resources.cargo) === 0 : state.phase === 'calm' && inventoryTotal(state.resources.cargo) === 0;
   el('coordinates').textContent = `${Math.round(state.x).toString().padStart(3, '0')} / ${Math.round(state.z).toString().padStart(3, '0')}`;
-  el('input-device').innerHTML = `${controls.gamepadConnected ? 'GAMEPAD VERBUNDEN' : 'TASTATUR + MAUS'} <i class="live-dot"></i>`;
-  document.querySelector<HTMLElement>('.keyboard')!.hidden = controls.gamepadConnected;
+  el('input-device').innerHTML = `${controls.touch.enabled ? 'TOUCH-STICKS' : controls.gamepadConnected ? 'GAMEPAD VERBUNDEN' : 'TASTATUR + MAUS'} <i class="live-dot"></i>`;
+  document.querySelector<HTMLElement>('.keyboard')!.hidden = controls.gamepadConnected || controls.touch.enabled;
   document.querySelector<HTMLElement>('.gamepad')!.hidden = !controls.gamepadConnected;
   drawMap();
 }
@@ -265,18 +286,20 @@ function updateResourceHud() {
   for (const id of RESOURCE_TYPES) el(`cargo-${id}`).textContent = String(r.cargo[id]);
   el('storage-total').textContent = `ATLAS-LAGER · ${inventoryTotal(r.storage)} EINHEITEN`;
   el('base-distance').textContent = `ATLAS ${Math.round(distance)} m`;
-  const laserKey = controls.gamepadConnected ? 'RB' : 'X / Shift', unloadKey = controls.gamepadConnected ? 'Y' : 'E';
-  let title = 'ERZ-LASER BEREIT', hint = `Auf ein Vorkommen zielen · ${laserKey} halten · Reichweite ${R.laserRange} m.`;
-  if (target) { title = `${RESOURCES[target.resource].name.toUpperCase()} · ${target.remaining} EINHEITEN`; hint = `${r.laserActive ? 'Abbau läuft' : `${laserKey} halten` } · ${Math.round(Math.hypot(target.x - state.x, target.z - state.z))} m · Fragmente einsammeln`; }
+  const laserAction = controls.touch.enabled ? 'Rechten Stick ziehen' : `${controls.gamepadConnected ? 'RB' : 'X / Shift'} halten`;
+  const unloadAction = controls.touch.enabled ? 'Entladen antippen' : `${controls.gamepadConnected ? 'Y' : 'E'} drücken`;
+  controls.touch.setUnloadAvailable(distance<=TRANSPORTER.radius&&Math.abs(state.speed)<=TRANSPORTER.maxUnloadSpeed&&cargo>0);
+  let title = 'ERZ-LASER BEREIT', hint = `${laserAction} · auf ein Vorkommen zielen · Reichweite ${R.laserRange} m.`;
+  if (target) { title = `${RESOURCES[target.resource].name.toUpperCase()} · ${target.remaining} EINHEITEN`; hint = `${r.laserActive ? 'Abbau läuft' : laserAction} · ${Math.round(Math.hypot(target.x - state.x, target.z - state.z))} m · Fragmente einsammeln`; }
   else {
     const nearest = r.deposits.filter(d => d.remaining > 0).sort((a, b) => Math.hypot(a.x - state.x, a.z - state.z) - Math.hypot(b.x - state.x, b.z - state.z))[0];
     if (nearest) {
       const d = Math.hypot(nearest.x - state.x, nearest.z - state.z);
-      hint = d > R.laserRange ? `Nächstes Vorkommen ${Math.round(d)} m · auf ${R.laserRange} m nähern.` : `Mit ${controls.gamepadConnected ? 'RS' : 'der Maus'} auf ein Vorkommen zielen · ${laserKey} halten.`;
+      hint = d > R.laserRange ? `Nächstes Vorkommen ${Math.round(d)} m · auf ${R.laserRange} m nähern.` : controls.touch.enabled ? 'Rechten Stick zum Erz ziehen · zielen und abbauen.' : `Mit ${controls.gamepadConnected ? 'RS' : 'der Maus'} auf ein Vorkommen zielen · ${laserAction}.`;
     } else hint = 'Alle Vorkommen erschöpft · übrige Fragmente einsammeln und liefern.';
   }
-  if (cargo === R.capacity) { title = 'FRACHTRAUM VOLL'; hint = `Zurück zu ATLAS · abbremsen und ${unloadKey} drücken. Fragmente bleiben liegen.`; }
-  if (distance <= TRANSPORTER.radius) { title = 'ATLAS / LADEZONE'; hint = state.speed > TRANSPORTER.maxUnloadSpeed ? 'Zum Entladen abbremsen · maximal 7 km/h.' : cargo ? `${unloadKey} drücken · ${cargo} Einheiten entladen und dem Auftrag gutschreiben.` : 'Frachtraum leer · suche die farbigen Vorkommen im Radar.'; }
+  if (cargo === R.capacity) { title = 'FRACHTRAUM VOLL'; hint = `Zurück zu ATLAS · abbremsen und ${unloadAction}. Fragmente bleiben liegen.`; }
+  if (distance <= TRANSPORTER.radius) { title = 'ATLAS / LADEZONE'; hint = Math.abs(state.speed) > TRANSPORTER.maxUnloadSpeed ? 'Zum Entladen abbremsen · maximal 7 km/h.' : cargo ? `${unloadAction} · ${cargo} Einheiten entladen und dem Auftrag gutschreiben.` : 'Frachtraum leer · suche die farbigen Vorkommen im Radar.'; }
   if (r.noticeTime > 0) hint = r.notice;
   el('interaction-title').textContent = title; el('interaction-hint').textContent = hint;
   document.querySelector('.interaction')!.classList.toggle('is-active', !!target || cargo === R.capacity || distance <= TRANSPORTER.radius || r.noticeTime > 0);
@@ -288,12 +311,16 @@ let previous = performance.now(), hudClock = 0;
 function frame(now: number) {
   if (!ready || graphicsLost) return;
   const dt = Math.min((now - previous) / 1000, 0.05); previous = now;
-  const input = controls.read(controls.pointer.active ? world.mouseAim(controls.pointer, state) : null);
+  controls.setActive(!paused&&!choosing&&!state.dead&&!document.hidden);
+  const input = controls.read(controls.pointer.active ? world.mouseAim(controls.pointer, state) : null,state.heading);
+  const device=controls.touch.enabled?'touch':controls.gamepadConnected?'gamepad':'keyboard';
+  if(document.body.dataset.controls!==device)document.body.dataset.controls=device;
   if (!paused && !state.dead && !document.hidden) {
     advance(state, input, dt);
     if (state.dead) { controls.clear(); showDialog(); }
   }
   if (!document.hidden) world.render(state, paused || state.dead ? 0 : dt, paused || state.dead || input.brake ? 0 : input.thrust);
+  audio.update(state,input,!paused&&!choosing&&!state.dead&&!document.hidden);
   hudClock += dt;
   if (hudClock > 0.06) { updateHud(input.thrust, input.brake); hudClock = 0; }
   requestAnimationFrame(frame);

@@ -2,9 +2,10 @@ import * as THREE from 'three';
 import { AssetLibrary } from './assets';
 import { CONFIG, SPACE, TRANSPORTER } from './config';
 import { contains } from './collision';
-import { groundHeight, getSolidFootprint, seededRandom, type LevelWorld, type Solid } from './levels';
+import { groundHeight, bedrockDatum, getSolidFootprint, seededRandom, type LevelWorld, type Solid } from './levels';
 import type { Quality } from './render-pipeline';
 import { createTerrain, groundGeology } from './terrain-surface';
+import { createAsteroidGeometry, createAsteroidMaterial } from './asteroid-rock';
 
 export function irregularRock(seed: number, detail = 1) {
   const geometry = new THREE.IcosahedronGeometry(1, detail);
@@ -23,6 +24,11 @@ export function irregularRock(seed: number, detail = 1) {
 /** A watertight low belt retains the authoritative collider/ore plane. Above it,
  * fractured strata, roofs and embedded rock plates are merged into one draw. */
 function formation(world: LevelWorld, solid: Solid, assets: AssetLibrary) {
+  if (solid.kind === 'asteroid') {
+    const mesh = new THREE.Mesh(createAsteroidGeometry(solid), createAsteroidMaterial(assets.surfaces.get('rock')!));
+    mesh.castShadow = mesh.receiveShadow = true; mesh.userData.structure = solid;
+    return mesh;
+  }
   const footprint = getSolidFootprint(solid)!;
   const contour: THREE.Vector2[] = [], distances: number[] = [];
   let distance = 0;
@@ -32,12 +38,12 @@ function formation(world: LevelWorld, solid: Solid, assets: AssetLibrary) {
     for (let j = 0; j < count; j++) { const t = j / count; contour.push(new THREE.Vector2(a.x + (b.x - a.x) * t - solid.x, a.z + (b.z - a.z) * t - solid.z)); distances.push(distance + t * length); }
     distance += length;
   }
-  const space = solid.kind === 'asteroid', count = contour.length;
+  const space = false, count = contour.length;
   const positions: number[] = [], uvs: number[] = [], colors: number[] = [];
   const seed = solid.x * 0.2 + solid.z * 0.13, random = seededRandom(Math.round(seed * 997) + 47021);
   const hash = (n: number) => { const x = Math.sin(n * 127.1 + seed * 311.7) * 43758.5453; return x - Math.floor(x); };
   const ground = contour.map(p => groundHeight(world, solid.x + p.x, solid.z + p.y));
-  const meanGround = ground.reduce((sum, h) => sum + h, 0) / count;
+  const meanGround = contour.reduce((sum, p) => sum + bedrockDatum(world, solid.x + p.x, solid.z + p.y), 0) / count;
   const tint = new THREE.Color(space ? '#8b99a7' : '#cbbda4');
   const seamTint = new THREE.Color(space ? '#657784' : '#9d947e');
   const roof = (x: number, z: number) => {
@@ -47,7 +53,8 @@ function formation(world: LevelWorld, solid: Solid, assets: AssetLibrary) {
     const end = .60 + .40 * Math.sqrt(Math.max(0, 1 - along * along));
     const peaks = .69 + .22 * Math.abs(Math.sin(along * 5.2 + seed)) + .09 * Math.cos(along * 12 + seed);
     const cleft = Math.exp(-Math.pow((along - .24 * Math.sin(seed)) / .13, 2)) * solid.height * .105;
-    return meanGround + solid.height * .56 * peaks * end - cleft + (1 - Math.abs(across)) * 2.1;
+    return Math.max(groundHeight(world, solid.x + x, solid.z + z) + 7.8,
+      meanGround + solid.height * .56 * peaks * end - cleft + (1 - Math.abs(across)) * 2.1);
   };
   const triangle = (a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3, shade: number, dark = false) => {
     const color = (dark ? seamTint : tint).clone().multiplyScalar(shade);
@@ -67,7 +74,7 @@ function formation(world: LevelWorld, solid: Solid, assets: AssetLibrary) {
   let last: THREE.Vector3[] = [];
   if (!space) {
     // Straight low faces retain every vein and all navigable canyon clearances.
-    for (const height of [-.8, .7, 5.8]) {
+    for (const height of [-3, .7, 5.8]) {
       const row = contour.map((p, i) => new THREE.Vector3(solid.x + p.x, ground[i] + height, solid.z + p.y));
       if (last.length) stitch(last, row, height < 1 ? .88 : .96); last = row;
     }
@@ -98,37 +105,6 @@ function formation(world: LevelWorld, solid: Solid, assets: AssetLibrary) {
     }
     const middle = new THREE.Vector3(solid.x, roof(0, 0) + .4, solid.z);
     for (let i = 0; i < count; i++) triangle(last[i], middle, last[(i + 1) % count], 1.07);
-  } else {
-    // A short full-size equatorial belt keeps the entire ore/mining plane exact.
-    // Upper/lower hemispheres are chipped independently, so no lathed silhouette.
-    for (let row = 0; row <= 24; row++) {
-      const t = (row - 12) / 12, a = Math.abs(t);
-      const belt = t < 0 ? -1.0 : 7.4;
-      const radius = Math.sqrt(Math.max(0, 1 - a * a));
-      const ring = contour.map((p, i) => {
-        const fracture = hash(Math.floor(distances[i] / 5.2) + Math.floor(row / 2) * 13);
-        const scale = radius * (1 - a * (.025 + fracture * .15));
-        const x = p.x * scale, z = p.y * scale;
-        const crag = Math.sin(p.x * .19 + seed) * Math.cos(p.y * .23 - seed);
-        const basin = Math.exp(-((x / solid.radius - .21) ** 2 + (z / solid.radius + .13) ** 2) / .095);
-        // All angular variation vanishes at each pole, avoiding a pleated cap.
-        const polarFade = radius * radius;
-        const detail = Math.sign(t) * crag * solid.height * .08 + (fracture - .5) * 3.1 - (t > 0 ? basin * solid.height * .17 : 0);
-        const y = row === 12 ? -1 : belt + Math.sign(t) * a * solid.height * .59 + a * polarFade * detail;
-        return new THREE.Vector3(solid.x + x, y, solid.z + z);
-      });
-      if (row === 0) {
-        const bottom = new THREE.Vector3(solid.x, ring.reduce((h, p) => h + p.y, 0) / count, solid.z);
-        for (let i = 0; i < count; i++) triangle(ring[i], ring[(i + 1) % count], bottom, .98);
-      }
-      if (row === 13) {
-        const equator = contour.map(p => new THREE.Vector3(solid.x + p.x, 7.4, solid.z + p.y));
-        stitch(last, equator, .98); last = equator;
-      }
-      if (last.length) stitch(last, ring, .98); last = ring;
-    }
-    const center = new THREE.Vector3(solid.x, last.reduce((h, p) => h + p.y, 0) / count, solid.z);
-    for (let i = 0; i < count; i++) triangle(last[i], center, last[(i + 1) % count], .98);
   }
 
   // Embedded angular plates catch light on ledges and split the roof silhouette.
@@ -186,6 +162,19 @@ function formation(world: LevelWorld, solid: Solid, assets: AssetLibrary) {
   geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   geometry.computeVertexNormals(); geometry.computeBoundingSphere();
   const material = assets.material('rock', { vertexColors: true, flatShading: true, roughness: space ? .94 : 1, metalness: space ? .16 : .025, side: THREE.DoubleSide });
+  if (!space) {
+    // Dust settles into the basal rock: the material transition follows the
+    // actual slope instead of drawing a uniform horizontal skirt around it.
+    const clearance = positions.filter((_, i) => i % 3 === 1).map((y, i) => y - groundHeight(world, positions[i*3], positions[i*3+2]));
+    geometry.setAttribute('groundClearance', new THREE.Float32BufferAttribute(clearance, 1));
+    material.onBeforeCompile = shader => {
+      shader.vertexShader = 'attribute float groundClearance; varying float vGroundClearance;\n' + shader.vertexShader;
+      shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvGroundClearance=groundClearance;');
+      shader.fragmentShader = 'varying float vGroundClearance;\n' + shader.fragmentShader;
+      shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb=mix(diffuseColor.rgb,vec3(.25,.225,.175),.35*(1.0-smoothstep(0.0,4.0,vGroundClearance)));');
+    };
+    material.customProgramCacheKey = () => 'embedded-cliff-foot-v1';
+  }
   const mesh = new THREE.Mesh(geometry, material); mesh.castShadow = mesh.receiveShadow = true; mesh.userData.structure = solid;
   return mesh;
 }
@@ -204,7 +193,7 @@ export class Landscape {
     if (this.terrain) { this.root.add(this.terrain); this.aimTargets.push(this.terrain); }
     for (const solid of world.solids) { const mesh = formation(world, solid, assets); this.solids.push(mesh); this.root.add(mesh); this.aimTargets.push(mesh); }
     this.scatter(assets, space);
-    if (!space) this.weatheredGravel(assets);
+    if (!space) { this.weatheredGravel(assets); this.footScree(assets); }
     if (space) {
       this.stars();
       const material = assets.material('rock', { color: '#a4aaa9', metalness: 0.25, roughness: 0.95 });
@@ -254,6 +243,32 @@ export class Landscape {
       mesh.count=placed; mesh.castShadow=mesh.receiveShadow=true; mesh.computeBoundingSphere();
       this.root.add(mesh); this.decorations.push({mesh,count:placed});
     }
+  }
+  private footScree(assets: AssetLibrary) {
+    const random = seededRandom(this.world.definition.seed + 3407), dummy = new THREE.Object3D(), up = new THREE.Vector3(0,1,0);
+    const normal = new THREE.Vector3(), cliffs = this.world.solids.filter(s => s.kind === 'cliff');
+    const material = assets.material('rock', { color:'#cbbda4', roughness:1, metalness:.025 });
+    const mesh = new THREE.InstancedMesh(irregularRock(18.7,1),material,cliffs.length*105);
+    mesh.name='embedded-foot-scree'; let count=0;
+    for (const cliff of cliffs) {
+      const contour=getSolidFootprint(cliff)!;
+      for (let i=0;i<105;i++) {
+        const edge=Math.floor(random()*contour.length), a=contour[edge], b=contour[(edge+1)%contour.length], t=random();
+        const length=Math.hypot(b.x-a.x,b.z-a.z), distance=.5+Math.pow(random(),1.8)*17;
+        const x=a.x+(b.x-a.x)*t+(b.z-a.z)/length*distance;
+        const z=a.z+(b.z-a.z)*t-(b.x-a.x)/length*distance;
+        if(this.world.solids.some(s=>contains(s,{x,z},.2)) || this.world.shelters.some(s=>Math.hypot(x-s.x,z-s.z)<s.radius+3)
+          || this.world.deposits.some(d=>Math.hypot(x-d.x,z-d.z)<5.5)) continue;
+        const size=(.45+random()*1.7)*(1-distance/30);
+        const h=groundHeight(this.world,x,z);
+        normal.set(groundHeight(this.world,x-.3,z)-groundHeight(this.world,x+.3,z),.6,groundHeight(this.world,x,z-.3)-groundHeight(this.world,x,z+.3)).normalize();
+        dummy.position.set(x,h-.10,z); dummy.quaternion.setFromUnitVectors(up,normal); dummy.rotateY(random()*Math.PI*2);
+        dummy.scale.set(size,size*(.12+random()*.14),size*(.7+random()*.65)); dummy.updateMatrix(); mesh.setMatrixAt(count,dummy.matrix);
+        mesh.setColorAt(count++,new THREE.Color().setScalar(.80+random()*.3));
+      }
+    }
+    mesh.count=count; mesh.castShadow=mesh.receiveShadow=true; mesh.computeBoundingSphere();
+    this.root.add(mesh); this.decorations.push({mesh,count});
   }
   private stars() {
     // A distant, motionless stellar backdrop adds depth without atmospheric fog.

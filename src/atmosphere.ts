@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { groundHeight, seededRandom, type LevelWorld } from './levels';
 import type { State } from './simulation';
 import type { Quality } from './render-pipeline';
+import { cliffFacing, cliffUpliftGLSL } from './geology';
 
 const dustVertex = `
 attribute vec4 cloud;
@@ -10,22 +11,29 @@ uniform vec3 follow;
 uniform float terrainSeed;
 uniform vec4 hills[6];
 uniform vec3 shelters[9];
+uniform vec4 cliffs[6];
+uniform vec2 cliffShapes[6];
 varying vec2 vUv;
 varying vec3 vWorld;
 varying float vSeed;
+${cliffUpliftGLSL}
 // Same heightfield as levels.groundHeight, sampled at each subdivided cloud vertex.
 float terrainHeight(vec2 p) {
   float x=p.x, z=p.y;
   float h=9.0+6.0*sin(x*.025+terrainSeed)*cos(z*.029)
     +3.0*sin(x*.057+z*.038)+1.4*cos(z*.11-x*.045);
+  float hillRise=0.0;
   for(int i=0;i<6;i++) {
     vec4 hill=hills[i];
     if(hill.z>0.0) {
       vec2 offset=p-hill.xy;
       float r2=dot(offset,offset)/(hill.z*hill.z);
-      if(r2<1.0) h+=hill.w*(1.0-r2)*(1.0-r2);
+      if(r2<1.0) hillRise+=hill.w*(1.0-r2)*(1.0-r2);
     }
   }
+  float uplift=0.0;
+  for(int i=0;i<6;i++) uplift=max(uplift,cliffUplift(cliffs[i],cliffShapes[i],p));
+  h+=max(hillRise,uplift);
   for(int i=0;i<9;i++) {
     float d=distance(p,shelters[i].xy);
     if(d<30.0) {
@@ -94,7 +102,9 @@ export class Atmosphere {
     geo.setAttribute('cloud',new THREE.InstancedBufferAttribute(new Float32Array(clouds),4));geo.instanceCount=90;
     const shelters=world.shelters.map(s=>new THREE.Vector3(s.x,s.z,s.radius));
     const hills=world.structures.filter(s=>s.kind==='hill').map(h=>new THREE.Vector4(h.x,h.z,h.radius,h.height));
-    const material=new THREE.ShaderMaterial({vertexShader:dustVertex,fragmentShader:dustFragment,transparent:true,depthTest:true,depthWrite:false,side:THREE.DoubleSide,uniforms:{time:{value:0},intensity:{value:0},color:{value:new THREE.Color('#c6ab7e')},follow:{value:new THREE.Vector3()},terrainSeed:{value:world.definition.seed*.001},hills:{value:hills},shelters:{value:shelters}}});
+    const cliffs=world.solids.filter(s=>s.kind==='cliff');
+    const material=new THREE.ShaderMaterial({vertexShader:dustVertex,fragmentShader:dustFragment,transparent:true,depthTest:true,depthWrite:false,side:THREE.DoubleSide,uniforms:{time:{value:0},intensity:{value:0},color:{value:new THREE.Color('#c6ab7e')},follow:{value:new THREE.Vector3()},terrainSeed:{value:world.definition.seed*.001},hills:{value:hills},shelters:{value:shelters},
+      cliffs:{value:cliffs.map(c=>new THREE.Vector4(c.x,c.z,c.halfX,c.halfZ))},cliffShapes:{value:cliffs.map(c=>new THREE.Vector2(c.height,cliffFacing(c)))}}});
     this.dust=new THREE.Mesh(geo,material);this.dust.frustumCulled=false;this.dust.renderOrder=3;this.root.add(this.dust);
   }
   setQuality(quality: Quality) {this.quality=quality;if(this.dust)this.dust.geometry.instanceCount=quality==='high'?90:48;}
@@ -106,10 +116,11 @@ export class Atmosphere {
     if(this.world.definition.environment==='space')return;
     this.emitClock+=dt;
     const interval=this.quality==='high'?.04:.085;
-    if(dt>0&&thrust>0&&state.speed>1&&!state.dead&&this.emitClock>=interval){
+    if(dt>0&&(thrust>0||state.speed<-.5)&&Math.abs(state.speed)>1&&!state.dead&&this.emitClock>=interval){
       this.emitClock=0;
-      const t=state.elapsed, side=Math.sin(t*31)*1.8;
-      this.particles[this.next]={x:state.x-Math.sin(state.heading)*3+Math.cos(state.heading)*side,z:state.z+Math.cos(state.heading)*3+Math.sin(state.heading)*side,y:groundHeight(this.world,state.x,state.z)+.35,age:0,life:1.1+Math.sin(t*27)*.25,scale:1+state.speed*.045};this.next=(this.next+1)%100;
+      const t=state.elapsed, side=Math.sin(t*31)*1.8, trail=Math.sign(state.speed)*3;
+      const x=state.x-Math.sin(state.heading)*trail+Math.cos(state.heading)*side,z=state.z+Math.cos(state.heading)*trail+Math.sin(state.heading)*side;
+      this.particles[this.next]={x,z,y:groundHeight(this.world,x,z)+.35,age:0,life:1.1+Math.sin(t*27)*.25,scale:1+Math.abs(state.speed)*.045};this.next=(this.next+1)%100;
     }
     let count=0;
     for(const p of this.particles){p.age+=dt;if(p.age>=p.life)continue;const a=p.age/p.life;p.x+=dt*.7;p.z+=dt*.3;

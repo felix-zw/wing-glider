@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "performance": {
+    "createdAt": "2026-09-27T22:27:31.711Z",
+    "quality": "high",
+    "warmupSeconds": 3,
+    "measurementSeconds": 60,
+    "requestedResolution": "1080",
+    "drawingBuffer": {
+      "width": 1920,
+      "height": 1080
+    },
+    "devicePixelRatio": 2.4600000381469727,
+    "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "gpuIdentification": "Browser-reported adapter name; hardware model was not independently verified.",
+    "samples": [
+      {
+        "workload": "calm-flight",
+        "frames": 3600,
+        "measuredSeconds": 60.00090000000001,
+        "averageFps": 59.99910001349979,
+        "p95FrameMs": 16.80000000000291,
+        "longestFrameMs": 16.800000000017462,
+        "drawCallsMean": 327.8833333333333,
+        "trianglesMean": 2531957.3388888887,
+        "geometries": 92,
+        "textures": 35,
+        "meetsFrameTarget": false
+      },
+      {
+        "workload": "aster-mining",
+        "frames": 3600,
+        "measuredSeconds": 60.000899999999994,
+        "averageFps": 59.999100013499806,
+        "p95FrameMs": 16.79999999998836,
+        "longestFrameMs": 16.89999999999418,
+        "drawCallsMean": 289.315,
+        "trianglesMean": 2469995.9105555555,
+        "geometries": 123,
+        "textures": 34,
+        "meetsFrameTarget": false
+      },
+      {
+        "workload": "sheltered-storm",
+        "frames": 3600,
+        "measuredSeconds": 60.00099999999997,
+        "averageFps": 59.99900001666642,
+        "p95FrameMs": 16.79999999998836,
+        "longestFrameMs": 16.89999999999418,
+        "drawCallsMean": 312,
+        "trianglesMean": 2536099,
+        "geometries": 85,
+        "textures": 32,
+        "meetsFrameTarget": false
+      },
+      {
+        "workload": "belt-mining",
+        "frames": 3600,
+        "measuredSeconds": 60.00080000000005,
+        "averageFps": 59.99920001066648,
+        "p95FrameMs": 16.79999999998836,
+        "longestFrameMs": 16.800000000046566,
+        "drawCallsMean": 214.13083333333333,
+        "trianglesMean": 506985.80333333334,
+        "geometries": 66,
+        "textures": 34,
+        "meetsFrameTarget": false
+      }
+    ],
+    "status": "completed"
+  },
+  "schedulerBaseline": {
+    "createdAt": "2026-09-27T22:32:26.265Z",
+    "quality": "high",
+    "drawingBuffer": {
+      "width": 1920,
+      "height": 1080
+    },
+    "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "gpuIdentification": "Browser-reported adapter name; hardware model was not independently verified.",
+    "warmupSeconds": 1,
+    "measurementSeconds": 10,
+    "simulationAndRenderingDisabled": true,
+    "samples": [
+      {
+        "mode": "raf-with-dom",
+        "frames": 600,
+        "measuredSeconds": 10.000200000000012,
+        "averageFps": 59.99880002399945,
+        "p95FrameMs": 16.79999999998836,
+        "longestFrameMs": 16.900000000023283
+      },
+      {
+        "mode": "raf-only",
+        "frames": 600,
+        "measuredSeconds": 10,
+        "averageFps": 60,
+        "p95FrameMs": 16.79999999998836,
+        "longestFrameMs": 16.800000000046566
+      }
+    ],
+    "status": "completed"
+  }
+}

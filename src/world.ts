@@ -8,6 +8,7 @@ import { AssetLibrary, disposeObject } from './assets';
 import { Landscape } from './landscape';
 import { Atmosphere } from './atmosphere';
 import { RenderPipeline, type Quality } from './render-pipeline';
+import { turretYaw, vehiclePose, type VehiclePose } from './vehicle-pose';
 
 export class World {
   readonly scene = new THREE.Scene();
@@ -40,6 +41,7 @@ export class World {
   private selectedQuality: Quality = 'high';
   private environment: THREE.WebGLRenderTarget;
   private lastHeading = 0;
+  private pose: VehiclePose | null = null;
   private onResize = () => this.resize();
   constructor(container: HTMLElement, levelId: LevelId = 'aster') {
     this.world = getLevelWorld(levelId);
@@ -85,7 +87,7 @@ export class World {
     this.landscape.setQuality(this.selectedQuality); this.atmosphere.setQuality(this.selectedQuality); this.resources.setQuality(this.selectedQuality);
   }
   private createShip() {
-    this.ship = this.assets.instantiate('speeder'); this.turret = this.ship.getObjectByName('mining_turret') ?? null;
+    this.ship = this.assets.instantiate('speeder'); this.ship.name='player-speeder'; this.turret = this.ship.getObjectByName('mining_turret') ?? null;
     this.muzzle = this.ship.getObjectByName('laser_socket') ?? new THREE.Object3D();
     if (!this.muzzle.parent) { this.muzzle.position.set(0, 1, -2.7); (this.turret ?? this.ship).add(this.muzzle); }
     const geometry = new THREE.ConeGeometry(.24, 2.3, 12); geometry.rotateX(Math.PI / 2); geometry.translate(0, 0, 1.05);
@@ -104,7 +106,7 @@ export class World {
   reset(s: State) {
     if (this.loaded) this.loadLevel(s.levelId);
     else if (!this.loaded) this.world = getLevelWorld(s.levelId);
-    this.follow.set(s.x, groundHeight(this.world, s.x, s.z), s.z); this.lastHeading = s.heading;
+    this.follow.set(s.x, groundHeight(this.world, s.x, s.z), s.z); this.lastHeading = s.heading; this.pose = null;
   }
   mouseAim(pointer: { x: number; y: number }, s: State): number | null {
     if (!this.loaded) return null;
@@ -131,13 +133,19 @@ export class World {
     this.camera.position.set(this.follow.x, this.follow.y + 165, this.follow.z + 120); this.camera.lookAt(this.follow);
     const sx = Math.round(this.follow.x * 8) / 8, sz = Math.round(this.follow.z * 8) / 8;
     this.sun.position.set(sx - 100, 180, sz - 90); this.sun.target.position.set(sx, 0, sz); this.sun.target.updateMatrixWorld();
-    this.ship.position.set(s.x, ground + CONFIG.hoverHeight + Math.sin(s.elapsed * 3) * .09, s.z);
-    this.ship.rotation.order = 'YXZ'; this.ship.rotation.y = -s.heading;
     const turn = dt > 0 ? Math.atan2(Math.sin(s.heading - this.lastHeading), Math.cos(s.heading - this.lastHeading)) / dt : 0;
-    this.ship.rotation.z = THREE.MathUtils.lerp(this.ship.rotation.z, THREE.MathUtils.clamp(turn * .035, -.1, .1), dt > 0 ? 1 - Math.exp(-dt * 7) : 0);
-    this.lastHeading = s.heading; if (this.turret) this.turret.rotation.y = s.heading - s.turret;
+    const bank=THREE.MathUtils.clamp(turn*.025,-.045,.045), hover=CONFIG.hoverHeight+Math.sin(s.elapsed*3)*.09;
+    const simulated=s.surfacePose, currentPose=simulated&&simulated.x===s.x&&simulated.z===s.z&&simulated.heading===s.heading&&simulated.elapsed===s.elapsed;
+    this.pose=space ? {height:SPACE.flightHeight,pitch:0,roll:THREE.MathUtils.lerp(this.pose?.roll??0,bank,1-Math.exp(-dt*7))}
+      : currentPose ? simulated : vehiclePose((x,z)=>groundHeight(this.world,x,z),{x:s.x,z:s.z,heading:s.heading,hover,bank},this.pose,dt);
+    this.ship.position.set(s.x,this.pose.height,s.z); this.ship.rotation.set(this.pose.pitch,-s.heading,this.pose.roll,'YXZ');
+    this.lastHeading = s.heading;
+    if (this.turret) {
+      // Keep world aiming stable when the hull pitches or rolls under the turret.
+      this.turret.rotation.y=turretYaw(s.heading,this.pose.pitch,this.pose.roll,s.turret);
+    }
     this.ship.updateMatrixWorld(true); this.muzzle.getWorldPosition(this.muzzlePosition); this.resources.render(s, this.muzzlePosition, dt > 0);
-    for (const flame of this.exhaust) { flame.visible = !s.dead && (thrust > 0 || s.speed > 3); flame.scale.z = .35 + thrust * .85 + Math.sin(s.elapsed * 35) * .06; }
+    for (const flame of this.exhaust) { flame.visible = !s.dead && s.speed >= 0 && (thrust > 0 || s.speed > 3); flame.scale.z = .35 + thrust * .85 + Math.sin(s.elapsed * 35) * .06; }
     this.atmosphere.update(s, dt, thrust, this.follow); this.landscape.animate(s.elapsed);
     const intensity = this.atmosphere.intensity; this.sun.intensity = (space ? 3.2 : 3.5) - intensity * 1.7;
     if (this.scene.fog instanceof THREE.FogExp2) this.scene.fog.density = .00065 + intensity * .0015;

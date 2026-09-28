@@ -34,7 +34,8 @@ export function createResourceState(world: LevelWorld = getLevelWorld()): Resour
 
 export function surfacePoint(d: Deposit, offset = 0, world?: LevelWorld, outward = 0): Position & { y: number } {
   const x = d.x - (d.surface?.nz ?? 0) * offset + (d.surface?.nx ?? 0) * outward, z = d.z + (d.surface?.nx ?? 1) * offset + (d.surface?.nz ?? 0) * outward;
-  return { x, z, y: d.surface?.kind === 'ground' && world ? groundHeight(world, x, z) + 0.4 : (d.surface?.y ?? 0) + 0.4 };
+  const terrainBound = world && (d.surface?.kind === 'ground' || d.surface?.kind === 'wall');
+  return { x, z, y: terrainBound ? groundHeight(world, x, z) + (d.surface?.kind === 'wall' ? .7 : .4) : (d.surface?.y ?? 0) + .4 };
 }
 export function findTarget(deposits: readonly Deposit[], actor: ResourceActor, world?: LevelWorld) {
   let result: { deposit: Deposit; point: Position & { y: number } } | null = null, bestAngle = Infinity, bestDistance = Infinity;
@@ -102,7 +103,7 @@ export function unloadResources(s: ResourceState, actor: ResourceActor, emit: (e
   const total = inventoryTotal(s.cargo);
   s.noticeTime = 3;
   if (baseDistance(actor) > TRANSPORTER.radius) { s.notice = 'Zum Entladen in die ATLAS-Ladezone fliegen.'; return; }
-  if (actor.speed > TRANSPORTER.maxUnloadSpeed) { s.notice = 'Zum Entladen abbremsen · maximal 7 km/h.'; return; }
+  if (Math.abs(actor.speed) > TRANSPORTER.maxUnloadSpeed) { s.notice = 'Zum Entladen abbremsen · maximal 7 km/h.'; return; }
   if (!total) { s.notice = 'Der Frachtraum ist leer.'; return; }
   for (const resource of RESOURCE_TYPES) {
     const amount = s.cargo[resource];

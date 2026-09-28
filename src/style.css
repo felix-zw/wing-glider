@@ -131,6 +131,10 @@ body[data-ui=loading] #shelter-guide, body[data-ui=choosing] #shelter-guide { vi
 .quality-setting label { color: #d6e2d7; font-size: 8px; letter-spacing: 1.5px; }
 .quality-setting select { min-width: 104px; padding: 7px 10px; border: 1px solid #bfd5c64a; background: #0f201a; font-size: 11px; }
 .quality-setting p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.audio-setting { display:grid; grid-template-columns:1fr auto; gap:8px 12px; align-items:center; padding:12px 0 16px; border-top:1px solid var(--line); }
+.audio-setting label { grid-column:1 / -1; display:flex; justify-content:space-between; font-size:8px; letter-spacing:1.5px; color:#d6e2d7; }
+.audio-setting input { width:100%; accent-color:#c4dfcc; }
+.audio-setting button { width:auto; margin:0; padding:8px 10px; font-size:10px; }
 #level-select { z-index: 20; background: radial-gradient(ellipse at 40% 12%, #203532e8, #071119f5 75%); }
 .level-dialog { width: min(850px, 100%); padding: 18px 0; }
 .level-dialog > .eyebrow { color: #c4d9cd; letter-spacing: 3px; font-size: 9px; }

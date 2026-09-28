@@ -1,5 +1,6 @@
 export const CONFIG = {
   seed: 2409, worldHalf: 210, maxSpeed: 38, acceleration: 17,
+  maxReverseSpeed: 6, reverseAcceleration: 5,
   drag: 3.2, braking: 42, turnRate: 1.9, hoverHeight: 2.4,
   calmSeconds: 45, warningSeconds: 12, stormSeconds: 15,
   maxHealth: 100, stormDamage: 10, shelterRadius: 12, deadzone: 0.16,
@@ -14,5 +15,5 @@ export const RESOURCE_CONFIG = {
 
 export const TRANSPORTER = { x: 0, z: 0, radius: 8, maxUnloadSpeed: 2, name: 'ATLAS' } as const;
 
-export const COLLISION = { shipRadius: 2.5, damageThreshold: 6, damageScale: 1.5, maxDamage: 25, cooldown: 0.8 } as const;
+export const COLLISION = { shipRadius: 4.5, damageThreshold: 6, damageScale: 1.5, maxDamage: 25, cooldown: 0.8 } as const;
 export const SPACE = { hazardCount: 12, minSpeed: 6, maxSpeed: 12, shieldRadius: 22, flightHeight: 2.4 } as const;

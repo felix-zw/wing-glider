@@ -48,7 +48,7 @@ test('navigation uses polygon corners and every returned segment clears the ship
   assert.ok(route.length > 1); assert.deepEqual(route.at(-1), goal);
   let previous = from;
   for (const next of route) { assert.equal(sweep(previous, next, world.solids, COLLISION.shipRadius + 0.2), null); previous = next; }
-  const gapFrom = { x: 16, z: 4 }, gapGoal = { x: 22, z: 4 };
+  const gapFrom = { x: 18, z: 6 }, gapGoal = { x: 24, z: 6 };
   assert.deepEqual(findRoute(world, gapFrom, gapGoal), [gapGoal]);
 });
 
@@ -82,7 +82,7 @@ for (const id of ['aster', 'belt'] as const) {
     for (const d of world.deposits) {
       assert.ok(world.structures.some(s => s.id === d.structureId)); assert.ok(d.surface);
       const p = { x: d.x + d.surface!.nx * 6, z: d.z + d.surface!.nz * 6 };
-      assert.ok(!world.solids.some(s => contains(s, p, COLLISION.shipRadius)), d.id);
+      assert.ok(!world.solids.some(s => contains(s, p, COLLISION.shipRadius)), `${d.id}: ${JSON.stringify({ p, blockedBy: world.solids.filter(s => contains(s, p, COLLISION.shipRadius)).map(s => s.id) })}`);
       const actor = { ...p, y: groundHeight(world, p.x, p.z) + 3.2, turret: Math.atan2(d.x - p.x, -(d.z - p.z)), speed: 0 };
       assert.equal(selectDeposit([d], actor, world)?.id, d.id, `unreachable ${d.id}`);
     }

@@ -4,7 +4,7 @@ import { CONFIG } from '../src/config';
 import { advance, createState, neutralInput, type State } from '../src/simulation';
 import { type Deposit } from '../src/resources';
 
-type Preset = 'aster-calm' | 'aster-storm' | 'aster-cliff' | 'aster-depleted' | 'belt-mining' | 'belt-outcrop' | 'vehicle';
+type Preset = 'aster-calm' | 'aster-storm' | 'aster-ridge' | 'aster-cliff' | 'aster-depleted' | 'aster-uphill' | 'aster-sidehill' | 'belt-mining' | 'belt-outcrop' | 'vehicle';
 type Workload = 'calm-flight' | 'aster-mining' | 'sheltered-storm' | 'belt-mining';
 type Quality = 'high' | 'standard';
 interface Sample {
@@ -66,6 +66,12 @@ function buildPreset(preset: Preset) {
   s.elapsed = 12.375;
   if (preset === 'aster-storm') {
     s.x = 0; s.z = 4; s.heading = Math.PI * 0.2; s.phase = 'storm'; s.phaseTime = 6;
+  } else if (preset === 'aster-uphill') {
+    s.x=44;s.z=33;s.heading=0;s.turret=0;
+  } else if (preset === 'aster-sidehill') {
+    s.x=65;s.z=13;s.heading=0;s.turret=0;
+  } else if (preset === 'aster-ridge') {
+    s.x=-40; s.z=46; s.heading=-.6;
   } else if (preset === 'aster-cliff') {
     const deposit = s.resources.deposits.find(d => d.surface?.kind === 'wall' && d.surface.nz > .5)!;
     placeForMining(s, deposit);
@@ -88,7 +94,7 @@ function buildPreset(preset: Preset) {
 async function showPreset(preset: Preset) {
   if (!loaded || busy) return;
   setBusy(true); currentPreset = preset; state = buildPreset(preset);
-  world.camera.zoom = preset === 'vehicle' ? 2.6 : ['aster-cliff', 'aster-depleted', 'belt-outcrop'].includes(preset) ? 1.8 : 1; world.camera.updateProjectionMatrix();
+  world.camera.zoom = ['vehicle','aster-uphill','aster-sidehill'].includes(preset) ? 2.6 : preset === 'aster-ridge' ? 1.1 : ['aster-cliff', 'aster-depleted', 'belt-outcrop'].includes(preset) ? 1.8 : 1; world.camera.updateProjectionMatrix();
   world.reset(state); applyResolution();
   status.textContent = 'Standbild wird vorbereitet…';
   // Settle camera and atmospheric transitions deterministically, then stop all

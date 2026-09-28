@@ -1,0 +1,130 @@
+.touch-controls[hidden] { display: none !important; }
+.touch-controls {
+  --stick-size: clamp(104px, 28vw, 128px);
+  position: fixed; inset: auto 0 0; z-index: 8;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 26px max(22px, env(safe-area-inset-right)) max(28px, calc(env(safe-area-inset-bottom) + 12px)) max(22px, env(safe-area-inset-left));
+  pointer-events: none; user-select: none; -webkit-user-select: none; color: #e7f4ea;
+}
+.touch-stick {
+  position: relative; width: var(--stick-size); height: var(--stick-size); flex: 0 0 var(--stick-size);
+  border: 1px solid #d9f4e767; border-radius: 50%; pointer-events: auto; touch-action: none;
+  background: radial-gradient(circle, #1a342334 29%, transparent 30% 60%, #e0f4de0b 61%), #132a252e;
+  box-shadow: inset 0 0 0 8px #e7fbe507, 0 4px 24px #07120e24;
+  -webkit-tap-highlight-color: transparent; transition: border-color .15s, background .15s;
+}
+.touch-stick.is-active { border-color: #d8fbeab3; background-color: #1c3a335c; }
+.stick-knob { position: absolute; width: 44px; height: 44px; left: calc(50% - 22px); top: calc(50% - 22px); border-radius: 50%; background: #c8e8db30; border: 1px solid #e1f9ef80; box-shadow: 0 2px 12px #0002, inset 0 0 12px #eaffee12; pointer-events: none; }
+.is-active .stick-knob { background: #c8e8db55; border-color: #e1f9efc9; }
+.stick-caption, .stick-help { position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 8px; font-weight: 500; letter-spacing: 1.7px; text-shadow: 0 1px 5px #000; }
+.stick-caption { bottom: calc(100% + 9px); }
+.stick-help { top: calc(100% + 9px); font-size: 6px; letter-spacing: .7px; color: #e7f4eac4; }
+.stick-up, .stick-down, .stick-reticle { position: absolute; left: 50%; transform: translateX(-50%); color: #e7f4ea7a; font: 15px/1 sans-serif; }
+.stick-up { top: 7px; } .stick-down { bottom: 7px; }
+.stick-cross { position: absolute; inset: 0 9px; display: flex; align-items: center; justify-content: space-between; color: #e7f4ea7a; font: 19px sans-serif; }
+.stick-reticle { top: 8px; }
+.touch-aim { border-color: #f4d1a268; color: #ffe0b6; }
+.touch-aim .stick-knob { border-color: #f4d1a29e; background: #f4d1a226; }
+.touch-aim.is-active { border-color: #ffe0b6; background-color: #66503a4f; }
+.touch-aim.is-active .stick-knob { background: #f4d1a25c; }
+.touch-unload { pointer-events: auto; touch-action: manipulation; align-self: flex-end; min-width: 62px; min-height: 54px; padding: 7px; margin: 0 8px 12px; border: 1px solid #f4d1a280; border-radius: 12px; background: #182c2399; color: #ffe0b6; letter-spacing: .6px; }
+.touch-unload > span { display: block; font-size: 22px; line-height: 1; margin-bottom: 5px; }
+.touch-unload small { font-size: 6px; }
+.touch-unload:disabled { opacity: .35; cursor: default; }
+.touch-reverse {
+  position: absolute; left: calc(max(22px, env(safe-area-inset-left)) + var(--stick-size) + 12px);
+  bottom: max(28px, calc(env(safe-area-inset-bottom) + 12px));
+  width: 66px; height: 56px; padding: 6px 3px;
+  border: 1px solid #d9f4e776; border-radius: 12px;
+  background: #173029a8; color: #e7f4ea; pointer-events: auto; touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.touch-reverse > span { display: block; font-size: 23px; line-height: 1; margin-bottom: 5px; }
+.touch-reverse small { font-size: 6px; letter-spacing: .4px; }
+.touch-reverse.is-active { background: #c8e8db77; border-color: #e9ffee; color: #fff; }
+body[data-controls=touch] { --edge: max(12px, env(safe-area-inset-left), env(safe-area-inset-right)); --touch-bottom: max(28px, calc(env(safe-area-inset-bottom) + 12px)); }
+body[data-controls=touch] footer { display: none; }
+body[data-controls=touch] .topbar { top: env(safe-area-inset-top); }
+body[data-controls=touch] #pause { min-height: 44px; min-width: 64px; touch-action: manipulation; }
+body[data-controls=touch] .telemetry, body[data-controls=touch] .navigation { bottom: calc(var(--touch-bottom) + 216px); }
+body[data-controls=touch] .interaction { bottom: calc(var(--touch-bottom) + 146px); }
+body[data-controls=touch] #shelter-guide { bottom: calc(var(--touch-bottom) + 356px); }
+@media (orientation: portrait) {
+  .touch-reverse {
+    left: auto;
+    right: calc(max(22px, env(safe-area-inset-right)) + (var(--stick-size) - 66px) / 2);
+    bottom: calc(max(28px, env(safe-area-inset-bottom) + 12px) + var(--stick-size) + 30px);
+  }
+  body[data-controls=touch] .telemetry, body[data-controls=touch] .navigation { bottom: calc(var(--touch-bottom) + 270px); }
+  body[data-controls=touch] .interaction { bottom: calc(var(--touch-bottom) + 200px); }
+  body[data-controls=touch] #shelter-guide { bottom: calc(var(--touch-bottom) + 410px); }
+}
+@media (max-width: 680px) {
+  body[data-controls=touch] .mission, body[data-controls=touch] .weather { top: calc(env(safe-area-inset-top) + 66px); }
+  body[data-controls=touch] .mission { width: 158px; padding: 9px 10px; }
+  body[data-controls=touch] .mission h1 { font-size: 18px; margin-bottom: 9px; }
+  body[data-controls=touch] .objectives { gap: 5px; }
+  body[data-controls=touch] .cargo-types, body[data-controls=touch] #storage-total { display: none; }
+  body[data-controls=touch] .cargo-heading { margin-top: 10px; }
+  body[data-controls=touch] .weather { width: 142px; padding: 9px; }
+  body[data-controls=touch] .weather-main > span { display: none; }
+  body[data-controls=touch] .weather-main { justify-content: flex-end; margin: 5px 0; }
+  body[data-controls=touch] .weather p { font-size: 7px; }
+  body[data-controls=touch] .telemetry { width: 124px; padding: 8px 10px; }
+  body[data-controls=touch] .speed-line > strong { font-size: 29px; }
+  body[data-controls=touch] #safety { margin-top: 5px; padding-top: 5px; }
+  body[data-controls=touch] .navigation { width: 122px; padding: 0 7px; }
+  body[data-controls=touch] #minimap { width: 106px; height: 78px; }
+  body[data-controls=touch] .map-heading { padding: 6px 0; }
+  body[data-controls=touch] .map-footer { display: none; }
+  body[data-controls=touch] .interaction { padding: 8px 10px; }
+  body[data-controls=touch] .interaction p { font-size: 8px; margin: 5px 0; }
+}
+@media (max-width: 370px) {
+  .touch-controls { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+  .touch-unload { min-width: 56px; margin-left: 4px; margin-right: 4px; }
+  .touch-reverse { left: calc(max(16px, env(safe-area-inset-left)) + var(--stick-size) + 10px); }
+  body[data-controls=touch] .mission { width: 145px; }
+  body[data-controls=touch] .weather { width: 139px; }
+}
+@media (max-width: 370px) and (orientation: portrait) {
+  .touch-reverse { left: auto; right: calc(max(16px, env(safe-area-inset-right)) + (var(--stick-size) - 66px) / 2); }
+}
+/* Short displays keep radar and status above the pads, leaving the centre clear. */
+@media (max-height: 650px) and (orientation: portrait) {
+  body[data-controls=touch] .mission h1, body[data-controls=touch] .mission .eyebrow { display: none; }
+  body[data-controls=touch] .weather p { display: none; }
+  body[data-controls=touch] .telemetry, body[data-controls=touch] .navigation { bottom: calc(var(--touch-bottom) + 258px); }
+  body[data-controls=touch] #shelter-guide { bottom: auto; top: calc(env(safe-area-inset-top) + 181px); }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+  .touch-controls { --stick-size: 108px; padding-bottom: max(24px, calc(env(safe-area-inset-bottom) + 12px)); }
+  body[data-controls=touch] .topbar { height: 48px; }
+  body[data-controls=touch] .compass, body[data-controls=touch] .location { display: none; }
+  body[data-controls=touch] .mission, body[data-controls=touch] .weather { top: calc(env(safe-area-inset-top) + 52px); padding: 8px 10px; }
+  body[data-controls=touch] .mission { width: 159px; }
+  body[data-controls=touch] .mission h1, body[data-controls=touch] .mission .eyebrow, body[data-controls=touch] .cargo-types, body[data-controls=touch] #storage-total { display: none; }
+  body[data-controls=touch] .objectives { gap: 4px; }
+  body[data-controls=touch] .objective > div:first-child { font-size: 8px; margin-bottom: 3px; }
+  body[data-controls=touch] .cargo-heading { margin: 7px 0 5px; font-size: 7px; }
+  body[data-controls=touch] .weather { width: 159px; }
+  body[data-controls=touch] .weather-top { font-size: 6px; }
+  body[data-controls=touch] .weather-main { margin: 5px 0; }
+  body[data-controls=touch] .weather-main strong { font-size: 22px; }
+  body[data-controls=touch] .weather p, body[data-controls=touch] .weather-main > span { display: none; }
+  body[data-controls=touch] .navigation { top: calc(env(safe-area-inset-top) + 52px); bottom: auto; right: calc(var(--edge) + 168px); width: 92px; padding: 0 5px 5px; }
+  body[data-controls=touch] .map-heading { padding: 5px 0; }
+  body[data-controls=touch] .map-heading .eyebrow { font-size: 5px; letter-spacing: .5px; }
+  body[data-controls=touch] #coordinates, body[data-controls=touch] .map-footer { display: none; }
+  body[data-controls=touch] #minimap { width: 80px; height: 58px; }
+  body[data-controls=touch] .telemetry { top: calc(env(safe-area-inset-top) + 52px); bottom: auto; left: calc(var(--edge) + 168px); width: 105px; padding: 7px 9px; }
+  body[data-controls=touch] .telemetry .eyebrow, body[data-controls=touch] .speed-ticks { display: none; }
+  body[data-controls=touch] .speed-line > strong { font-size: 24px; }
+  body[data-controls=touch] .speed-line > span { font-size: 6px; }
+  body[data-controls=touch] .hull { margin: 4px 0; font-size: 6px; }
+  body[data-controls=touch] #safety { font-size: 5px; margin-top: 4px; padding-top: 4px; letter-spacing: .2px; }
+  body[data-controls=touch] .interaction { bottom: calc(var(--touch-bottom) + 64px); width: min(340px, calc(100% - 300px)); padding: 7px 9px; }
+  body[data-controls=touch] .interaction p { font-size: 8px; margin: 5px 0; }
+  body[data-controls=touch] .interaction-top { font-size: 7px; }
+  body[data-controls=touch] #shelter-guide { bottom: calc(var(--touch-bottom) + 134px); padding: 5px 8px; }
+}

@@ -1,10 +1,12 @@
 import * as THREE from 'three';
 import type { AssetLibrary } from './assets';
 import { groundHeight, type LevelWorld } from './levels';
+import { bedrockUplift } from './geology';
 
 /** Weathering is strongest at outcrop feet; sheltered floors retain finer sand. */
 export function groundGeology(world: LevelWorld, x: number, z: number) {
-  let rock = 0, shelter = 0, mineral = 0, copper = 0;
+  const bedrock = Math.min(1, bedrockUplift(world,x,z)/14);
+  let rock = bedrock, shelter = 0, mineral = 0, copper = 0;
   for (const solid of world.solids) if (solid.kind === 'cliff') {
     const distance = Math.hypot(Math.max(0, Math.abs(x - solid.x) - solid.halfX), Math.max(0, Math.abs(z - solid.z) - solid.halfZ));
     rock = Math.max(rock, Math.exp(-distance * distance / 90));
@@ -22,13 +24,13 @@ export function groundGeology(world: LevelWorld, x: number, z: number) {
     const distance = Math.hypot(x - safe.x, z - safe.z);
     shelter = Math.max(shelter, 1 - THREE.MathUtils.smoothstep(distance, safe.radius, safe.radius + 9));
   }
-  return { rock: rock * (1 - shelter), shelter, mineral: mineral * (1 - shelter), copper };
+  return { rock: rock * (1 - shelter), shelter, bedrock:bedrock*(1-shelter), mineral: mineral * (1 - shelter), copper };
 }
 
 const surfaceShader = /* glsl */`
 varying vec3 vLandPosition;
 varying vec3 vLandNormal;
-varying vec2 vGeology;
+varying vec3 vGeology;
 varying vec2 vMineralWeather;
 uniform sampler2D landRock;
 float landHash(vec2 p) {
@@ -78,15 +80,15 @@ export function createTerrain(world: LevelWorld, assets: AssetLibrary) {
   const positions = geometry.attributes.position, geology: number[] = [], mineralWeather: number[] = [];
   for (let i = 0; i < positions.count; i++) {
     const x = positions.getX(i), z = positions.getZ(i), field = groundGeology(world, x, z);
-    positions.setY(i, groundHeight(world, x, z)); geology.push(field.rock, field.shelter);
+    positions.setY(i, groundHeight(world, x, z)); geology.push(field.rock, field.shelter, field.bedrock);
     mineralWeather.push(field.mineral, field.copper);
   }
-  geometry.setAttribute('geology', new THREE.Float32BufferAttribute(geology, 2)); geometry.computeVertexNormals();
+  geometry.setAttribute('geology', new THREE.Float32BufferAttribute(geology, 3)); geometry.computeVertexNormals();
   geometry.setAttribute('mineralWeather', new THREE.Float32BufferAttribute(mineralWeather, 2));
   const material = assets.material('sand');
   material.onBeforeCompile = shader => {
     shader.uniforms.landRock = { value: assets.surfaces.get('rock')!.color };
-    shader.vertexShader = 'attribute vec2 geology; attribute vec2 mineralWeather; varying vec3 vLandPosition; varying vec3 vLandNormal; varying vec2 vGeology; varying vec2 vMineralWeather;\n' + shader.vertexShader;
+    shader.vertexShader = 'attribute vec3 geology; attribute vec2 mineralWeather; varying vec3 vLandPosition; varying vec3 vLandNormal; varying vec3 vGeology; varying vec2 vMineralWeather;\n' + shader.vertexShader;
     shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvLandPosition=position; vLandNormal=normal; vGeology=geology; vMineralWeather=mineralWeather;');
     shader.fragmentShader = surfaceShader + shader.fragmentShader;
     shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', /* glsl */`
@@ -107,6 +109,7 @@ export function createTerrain(world: LevelWorld, assets: AssetLibrary) {
         + texture2D(landRock,vLandPosition.xz*.085+landWarp*.11).rgb*weights.y
         + texture2D(landRock,vLandPosition.xy*.085+landWarp*.11).rgb*weights.z;
       rockColor *= mix(vec3(.76,.78,.72),vec3(.95,.93,.86),landWeather);
+      vec3 bedrockColor=mix(vec3(.32,.29,.23),rockColor,.15)*vec3(.65,.59,.47);
       float landGrain=landNoise(landP*2.6);
       float grit=smoothstep(.57,.79,landGrain)*(landRockMask*.22+.045);
       float landCrust=landFbm(landP*.72+landWarp*4.0);
@@ -117,6 +120,7 @@ export function createTerrain(world: LevelWorld, assets: AssetLibrary) {
       rockColor = mix(vec3(.305,.285,.23),rockColor,.18)
         * mix(.52,1.32,smoothstep(.27,.72,landWeather*.68+landCrust*.32));
       rockColor *= mix(1.0,mix(.92,1.015,landPlateShape),landPlateCover);
+      rockColor=mix(rockColor,bedrockColor,vGeology.z*.78);
       vec3 landColor=mix(sandColor,rockColor,landRockMask)*(1.0-grit*.45);
       vec3 mineralSoil=mix(vec3(.205,.212,.173),vec3(.255,.177,.104),vMineralWeather.y);
       landColor=mix(landColor,mineralSoil,vMineralWeather.x*(.24+landWeather*.3));
@@ -134,6 +138,6 @@ export function createTerrain(world: LevelWorld, assets: AssetLibrary) {
     shader.fragmentShader = shader.fragmentShader.replace('#include <normal_fragment_maps>', 'normal=landBump(-vViewPosition,normal,landRelief);');
     shader.fragmentShader = shader.fragmentShader.replace('#include <roughnessmap_fragment>', 'float roughnessFactor=mix(.96,.86,landRockMask);');
   };
-  material.customProgramCacheKey = () => 'aster-weathered-ground-v2';
-  const mesh = new THREE.Mesh(geometry, material); mesh.receiveShadow = true; return mesh;
+  material.customProgramCacheKey = () => 'aster-embedded-bedrock-v3';
+  const mesh = new THREE.Mesh(geometry, material); mesh.castShadow = mesh.receiveShadow = true; return mesh;
 }

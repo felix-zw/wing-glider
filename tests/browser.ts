@@ -2,7 +2,10 @@ import { World } from '../src/world';
 import { Controls } from '../src/input';
 import { advance, createState, neutralInput, phaseDuration } from '../src/simulation';
 import { inventoryTotal, RESOURCES, RESOURCE_TYPES, type ResourceId, type Deposit } from '../src/resources';
-import { getLevelWorld, type LevelId } from '../src/levels';
+import { getLevelWorld, groundHeight, type LevelId } from '../src/levels';
+import * as THREE from 'three';
+import { cliffFacing, cliffUplift, cliffUpliftGLSL } from '../src/geology';
+import { checkTouchControls } from './touch-input';
 
 const world = new World(document.getElementById('viewport')!);
 const controls = new Controls(world.renderer.domElement, () => {});
@@ -18,9 +21,58 @@ world.ready.then(() => {
 }).catch(error => { output.textContent = `ASSET LOAD FAILED: ${String(error)}`; });
 const key = (code: string, down: boolean, repeat = false) => window.dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { code, repeat }));
 function check(condition: unknown, message: string) { if (!condition) throw new Error(message); output.textContent += `\nPASS ${message}`; }
+function checkTerrainGPUParity() {
+  const cliffs=getLevelWorld('aster').solids.filter(s=>s.kind==='cliff');
+  const samples: number[]=[], expected: number[]=[];
+  cliffs.forEach((c,index)=> {
+    for(const along of [-56,-23,0,23,56]) for(const across of [-58,-30,-5,-.001,0,.001,5,15]) {
+      const vertical=c.halfX<c.halfZ, sign=cliffFacing(c);
+      const x=c.x+(vertical?across*sign:along), z=c.z+(vertical?along:across*sign);
+      samples.push(x,z,index); expected.push(cliffUplift(c,x,z));
+    }
+  });
+  const geometry=new THREE.BufferGeometry(), positions=expected.flatMap((_,i)=>[-1+(i+.5)*2/expected.length,0,0]);
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+  geometry.setAttribute('samplePoint',new THREE.Float32BufferAttribute(samples,3));
+  const material=new THREE.ShaderMaterial({depthTest:false,depthWrite:false,blending:THREE.NoBlending,uniforms:{
+    cliffs:{value:cliffs.map(c=>new THREE.Vector4(c.x,c.z,c.halfX,c.halfZ))},
+    shapes:{value:cliffs.map(c=>new THREE.Vector2(c.height,cliffFacing(c)))},
+  },vertexShader:`attribute vec3 samplePoint; uniform vec4 cliffs[6]; uniform vec2 shapes[6]; varying float height;
+    ${cliffUpliftGLSL}
+    void main(){int i=int(samplePoint.z);height=cliffUplift(cliffs[i],shapes[i],samplePoint.xy);gl_Position=vec4(position,1.0);gl_PointSize=1.0;}`,
+  fragmentShader:'varying float height; void main(){gl_FragColor=vec4(height,0.0,0.0,1.0);}'});
+  const scene=new THREE.Scene(), points=new THREE.Points(geometry,material); points.frustumCulled=false; scene.add(points);
+  const target=new THREE.WebGLRenderTarget(expected.length,1,{type:THREE.FloatType,depthBuffer:false});
+  const previous=world.renderer.getRenderTarget(), pixels=new Float32Array(expected.length*4);
+  try {
+    world.renderer.setRenderTarget(target); world.renderer.render(scene,new THREE.Camera());
+    world.renderer.readRenderTargetPixels(target,0,0,expected.length,1,pixels);
+    const error=Math.max(...expected.map((h,i)=>Math.abs(pixels[i*4]-h)));
+    check(Number.isFinite(error)&&error<.001,`Storm GPU relief matches CPU terrain across ${expected.length} samples (error ${error.toFixed(6)} m)`);
+  } finally { world.renderer.setRenderTarget(previous); geometry.dispose(); material.dispose(); target.dispose(); }
+}
 function step(seconds: number, aim: number | null = state.turret) {
   controls.pointer.active = aim !== null;
   advance(state, controls.read(aim), seconds); world.render(state, 1 / 60, 0);
+}
+function checkVehicleGroundClearance() {
+  const s=createState(), terrain=getLevelWorld('aster'), ship=world.scene.getObjectByName('player-speeder')!;
+  world.reset(s); let smallest=Infinity;
+  // Real imported hull vertices, including the nose and both outer engine pods.
+  for(const [x,z,heading] of [[25,36,0],[41,32,0],[55,14,1.5],[52,-7,0],[21,0,1.5],[-40,72,.4],[94,92,3],[110,55,1]]) {
+    s.x=x;s.z=z;s.heading=heading;s.elapsed+=.05;world.render(s,1/20,0);
+    ship.traverse(object=>{
+      if(!(object instanceof THREE.Mesh)||!object.geometry.userData.shared)return;
+      const positions=object.geometry.getAttribute('position'),p=new THREE.Vector3();
+      for(let i=0;i<positions.count;i++) {
+        p.fromBufferAttribute(positions,i).applyMatrix4(object.matrixWorld);
+        smallest=Math.min(smallest,p.y-groundHeight(terrain,p.x,p.z));
+      }
+    });
+  }
+  check(smallest>.15,`Real GLB hull clears slopes and crests during attitude changes (minimum ${smallest.toFixed(2)} m)`);
+  const belt=createState('belt');world.reset(belt);world.render(belt,0,0);
+  check(Math.abs(ship.rotation.x)<1e-8&&Math.abs(ship.rotation.z)<1e-8,'Space flight resets terrain pitch and roll');
 }
 function deliver() {
   state.x = 0; state.z = 0; state.speed = 0;
@@ -82,6 +134,9 @@ document.getElementById('run')!.addEventListener('click', async () => {
   try {
     await world.ready;
     await checkDisposeDuringAssetLoad();
+    checkTerrainGPUParity();
+    checkVehicleGroundClearance();
+    checkTouchControls(controls,world.renderer.domElement,check);
     state = createState(); controls.clear();
     // Validate edge-triggered keyboard input, including repeat and release behavior.
     key('KeyE', true); check(controls.read(null).unloadPressed, 'E produces one unload press');
@@ -90,6 +145,12 @@ document.getElementById('run')!.addEventListener('click', async () => {
     for (const code of ['KeyX', 'ShiftLeft', 'ShiftRight']) {
       key(code, true); check(controls.read(null).mine, `${code} activates laser`);
       key(code, false); check(!controls.read(null).mine, `${code} releases laser`);
+    }
+    for(const code of ['KeyS','ArrowDown','Space']) {
+      key(code,true);check(controls.read(null).brake===1,`${code} activates brake/reverse`);
+      const backward=createState();advance(backward,controls.read(null),.5);
+      check(backward.speed<0&&backward.z>36,`${code} reverses slowly from standstill`);
+      key(code,false);check(controls.read(null).brake===0,`${code} releases brake/reverse`);
     }
     key('KeyX', true); key('KeyE', true); controls.clear();
     check(!controls.read(null).mine && !controls.read(null).unloadPressed, 'Input clear cancels held and queued actions');
@@ -105,6 +166,7 @@ document.getElementById('run')!.addEventListener('click', async () => {
       buttons[5].pressed = false; buttons[3].pressed = false;
       check(!controls.read(null).mine, 'Gamepad bumper release stops mining');
       buttons[3].pressed = true; check(controls.read(null).unloadPressed, 'Gamepad Y rearms after release');
+      buttons[6].value=.45;check(controls.read(null).brake===.45,'Gamepad LT preserves analog brake/reverse input');
     } finally {
       if (originalGamepads) Object.defineProperty(navigator, 'getGamepads', originalGamepads);
       else Reflect.deleteProperty(navigator, 'getGamepads');

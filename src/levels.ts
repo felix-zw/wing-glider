@@ -1,5 +1,6 @@
 import { CONFIG, RESOURCE_CONFIG as R, TRANSPORTER } from './config';
 import { FIRST_MISSION, type MissionDefinition } from './missions';
+import { bedrockUplift } from './geology';
 import type { Deposit, Position, ResourceId } from './resources';
 
 export type LevelId = 'aster' | 'belt';
@@ -102,7 +103,7 @@ export function getLevelWorld(id: LevelId = 'aster'): LevelWorld {
   for (const host of structures) {
     if (host.kind === 'hill') {
       const angle = Math.atan2(36 - host.z, 25 - host.x);
-      const angles = host.id === 'hill-0' ? [angle - 0.7, angle, angle + 0.7] : host.id === 'hill-5' ? [angle] : [angle - 0.35, angle + 0.7];
+      const angles = host.id === 'hill-0' ? [angle - 0.7, angle, angle + 0.7] : host.id === 'hill-5' ? [angle] : [angle - 0.35, angle + (host.id === 'hill-1' ? 0.6 : 0.7)];
       for (const a of angles) add(host, host.x + Math.cos(a) * host.radius * 0.62, host.z + Math.sin(a) * host.radius * 0.62, Math.cos(a), Math.sin(a), 7);
     } else if (host.kind === 'cliff') {
       const i = Number(host.id.split('-')[1]), sign = i % 2 === 0 ? 1 : -1;
@@ -124,17 +125,25 @@ export function getLevelWorld(id: LevelId = 'aster'): LevelWorld {
   Object.freeze(structures); Object.freeze(world.solids); Object.freeze(deposits); Object.freeze(shelters);
   cache.set(id, Object.freeze(world)); return world;
 }
-export function groundHeight(world: LevelWorld, x: number, z: number): number {
+function terrainHeight(world: LevelWorld, x: number, z: number, uplift: boolean): number {
   if (world.definition.environment === 'space') return 0;
   const seed = world.definition.seed * 0.001;
   let h = 9 + 6 * Math.sin(x * 0.025 + seed) * Math.cos(z * 0.029) + 3 * Math.sin(x * 0.057 + z * 0.038) + 1.4 * Math.cos(z * 0.11 - x * 0.045);
+  let hills = 0;
   for (const hill of world.structures) if (hill.kind === 'hill') {
     const r = Math.hypot(x - hill.x, z - hill.z) / hill.radius;
-    if (r < 1) h += hill.height * (1 - r * r) ** 2;
+    if (r < 1) hills += hill.height * (1 - r * r) ** 2;
   }
+  // Join existing hills and the bedrock ridges; stacking their heights would
+  // create artificial humps and obscure vehicles in the canyon below.
+  h += uplift ? Math.max(hills, bedrockUplift(world, x, z)) : hills;
   for (const s of world.shelters) {
     const d = Math.hypot(x - s.x, z - s.z);
     if (d < 30) { const t = Math.min(1, Math.max(0, (d - 12) / 18)); h = 1.5 + (h - 1.5) * t * t * (3 - 2 * t); }
   }
   return h;
 }
+
+export const groundHeight = (world: LevelWorld, x: number, z: number) => terrainHeight(world, x, z, true);
+/** Fixed geological datum keeps exposed crags embedded as their slopes rise. */
+export const bedrockDatum = (world: LevelWorld, x: number, z: number) => terrainHeight(world, x, z, false);

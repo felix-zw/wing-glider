@@ -1,0 +1,135 @@
+Running controlled browser integration scenario…
+PASS World disposed after texture decoding began, before asset loading settled
+PASS Disposed World.ready settles within 15 seconds
+PASS Disposal removes the loading world canvas
+PASS Second dispose during asset loading is harmless
+PASS Late decoded surface textures are released after cancellation
+PASS Cancelled loading does not instantiate a late speeder
+PASS Storm GPU relief matches CPU terrain across 240 samples (error 0.000002 m)
+PASS Real GLB hull clears slopes and crests during attitude changes (minimum 1.16 m)
+PASS Space flight resets terrain pitch and roll
+PASS Touch input reveals pads during active play
+PASS Two fingers simultaneously fly and aim/mine
+PASS A third pointer cannot steal or release an occupied stick
+PASS Releasing flight finger leaves the independent laser finger active
+PASS Cancelled aim pointer stops laser and releases aim
+PASS Left stick down turns toward the south without selecting reverse
+PASS Holding south rotates then flies forward to the south
+PASS Losing pointer capture releases directional steering
+PASS Reverse button first brakes forward motion
+PASS Holding reverse button drives backwards from rest
+PASS An extra finger cannot release a held reverse button
+PASS Cancelling reverse button releases reverse
+PASS Travel outside the stick remains bounded
+PASS Returning to the centre produces neutral input
+PASS Unavailable unloading button cannot queue a delivery
+PASS Touch unloading is a single press
+PASS Touch button delivers cargo through the real simulation
+PASS resize clears both sticks and reverse
+PASS blur clears both sticks and reverse
+PASS Pause and resume never restore old held or queued actions
+PASS Connected standard gamepad hides and cancels touch controls
+PASS Gamepad left stick preserves analog reverse without a stale touch laser
+PASS Gamepad left stick up supplies forward thrust
+PASS Disconnecting the gamepad restores neutral touch controls
+PASS Keyboard use takes over and hides the sticks
+PASS A new touch returns to neutral mobile input without stale keyboard thrust
+PASS Flight keyboard input still works after a HUD button had focus
+PASS Space on a focused button keeps button activation separate from flight
+PASS Touching a paused game cannot activate flight controls
+PASS E produces one unload press
+PASS Held E does not repeat
+PASS Keyboard repeat does not unload
+PASS KeyX activates laser
+PASS KeyX releases laser
+PASS ShiftLeft activates laser
+PASS ShiftLeft releases laser
+PASS ShiftRight activates laser
+PASS ShiftRight releases laser
+PASS KeyS activates brake/reverse
+PASS KeyS reverses slowly from standstill
+PASS KeyS releases brake/reverse
+PASS ArrowDown activates brake/reverse
+PASS ArrowDown reverses slowly from standstill
+PASS ArrowDown releases brake/reverse
+PASS Space activates brake/reverse
+PASS Space reverses slowly from standstill
+PASS Space releases brake/reverse
+PASS Input clear cancels held and queued actions
+PASS Standard gamepad RB mines and Y unloads
+PASS Held gamepad Y does not repeat
+PASS Gamepad bumper release stops mining
+PASS Gamepad Y rearms after release
+PASS Gamepad LT preserves analog brake/reverse input
+
+LEVEL: aster
+PASS ferrite: 12 units mined with keyboard laser
+PASS ferrite: 12 units mined with keyboard laser
+PASS ferrite: 6 units mined with keyboard laser
+PASS Cargo reaches 30 units
+PASS Onboard resources do not count as delivered
+PASS Full cargo leaves mined fragments in the world
+PASS E outside loading zone cannot deliver
+PASS First delivery credits 30 ferrite
+PASS Leftover fragment is collected after unloading
+PASS copper: 12 units mined with keyboard laser
+PASS copper: 8 units mined with keyboard laser
+PASS crystal: 10 units mined with keyboard laser
+PASS Second mixed load contains 20 copper and 10 crystals
+PASS All delivery objectives complete
+PASS All deliveries, including surplus, retained in ATLAS
+PASS Continue mining and delivering after completion
+PASS Zero-time pause freezes gameplay
+
+LEVEL: belt
+PASS ferrite: 12 units mined with keyboard laser
+PASS ferrite: 12 units mined with keyboard laser
+PASS ferrite: 6 units mined with keyboard laser
+PASS Cargo reaches 30 units
+PASS Onboard resources do not count as delivered
+PASS Full cargo leaves mined fragments in the world
+PASS E outside loading zone cannot deliver
+PASS First delivery credits 30 ferrite
+PASS Leftover fragment is collected after unloading
+PASS copper: 12 units mined with keyboard laser
+PASS copper: 8 units mined with keyboard laser
+PASS crystal: 10 units mined with keyboard laser
+PASS Second mixed load contains 20 copper and 10 crystals
+PASS All delivery objectives complete
+PASS All deliveries, including surplus, retained in ATLAS
+PASS Continue mining and delivering after completion
+PASS Zero-time pause freezes gameplay
+PASS Aster walls stop the ship and cause impact damage
+PASS Moving asteroids collide with the ship
+PASS aster: no previous-level deposits
+PASS belt: no previous-level deposits
+PASS aster: no previous-level deposits
+PASS belt: no previous-level deposits
+PASS aster: no previous-level deposits
+PASS aster/high: GPU geometry and texture counts stable after switch
+PASS belt: no previous-level deposits
+PASS belt/high: GPU geometry and texture counts stable after switch
+PASS aster: no previous-level deposits
+PASS aster/standard: GPU geometry and texture counts stable after switch
+PASS belt: no previous-level deposits
+PASS belt/standard: GPU geometry and texture counts stable after switch
+PASS aster: no previous-level deposits
+PASS aster/high: GPU geometry and texture counts stable after switch
+PASS belt: no previous-level deposits
+PASS belt/high: GPU geometry and texture counts stable after switch
+PASS aster: no previous-level deposits
+PASS aster/standard: GPU geometry and texture counts stable after switch
+PASS belt: no previous-level deposits
+PASS belt/standard: GPU geometry and texture counts stable after switch
+PASS aster: no previous-level deposits
+PASS aster/high: GPU geometry and texture counts stable after switch
+PASS belt: no previous-level deposits
+PASS belt/high: GPU geometry and texture counts stable after switch
+PASS aster: no previous-level deposits
+PASS aster/standard: GPU geometry and texture counts stable after switch
+PASS belt: no previous-level deposits
+PASS belt/standard: GPU geometry and texture counts stable after switch
+Terrain aim: 0.11 ms/sample
+PASS Restart clears cargo, storage and mission
+
+ALL BROWSER CHECKS PASSED

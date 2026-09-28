@@ -1,5 +1,7 @@
 # Aster ground and embedded ore refinement — 2026-09-27
 
+Historical report for the material/ore pass. The subsequent [terrain integration pass](TERRAIN-INTEGRATION.md) changes the physical heightfield around the cliffs and contains the latest captures and measurements.
+
 This follow-up refines the ground and ore integration after the [initial graphics implementation](VALIDATION.md). The cliff and asteroid formation geometry, vehicles, authoritative heightfield, collision footprints and simulation rules are preserved.
 
 ## Visible changes

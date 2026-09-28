@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Wing Glider · Audio review</title>
+  <style>
+    body { margin: 0; padding: 36px; color: #e6ece6; background: #111d23; font: 14px/1.6 system-ui, sans-serif; }
+    main { max-width: 840px; margin: auto; } h1 { font-size: 18px; letter-spacing: .16em; font-weight: 500; }
+    p { color: #b1c3c6; } .row { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+    button { border: 1px solid #55756d; background: #1a332e; color: #dcf4e8; border-radius: 5px; padding: 10px 15px; cursor: pointer; font: inherit; }
+    button:disabled { opacity: .45; cursor: wait; } button:focus-visible { outline: 2px solid #ffd6a4; outline-offset: 3px; }
+    pre { white-space: pre-wrap; padding: 20px; border: 1px solid #345057; background: #0a151a; font: 12px/1.65 ui-monospace, monospace; }
+    small { color: #a4baba; } #status { min-height: 24px; }
+  </style>
+</head>
+<body><main>
+  <h1>WING GLIDER / AUDIO REVIEW</h1>
+  <p>Alle Klänge entstehen lokal mit Web Audio. Die Prüfungen rendern die tatsächliche Audiographik offline und messen Signal, Spitzenpegel, Ausklang und Stummschaltung.</p>
+  <div class="row"><button id="run">Run audio integration checks</button><button id="stop">Wiedergabe stoppen</button></div>
+  <div class="row" aria-label="Einzelne Klänge anhören">
+    <button data-sound="flight">Flug / Triebwerk</button><button data-sound="laser">Abbaulaser</button>
+    <button data-sound="break">Felsbruch</button><button data-sound="collect">Einsammeln</button>
+    <button data-sound="unload">Entladen</button><button data-sound="desert">Aster / Wüstenwind</button>
+  </div>
+  <small>Die Klangvorschauen dauern jeweils zwei Sekunden. Der Wind wird im Spiel ausschließlich auf Aster abgespielt. Die Prüfungen verändern keine gespeicherten Audioeinstellungen.</small>
+  <p id="status" role="status">Bereit. Zum Freischalten und Prüfen klicken.</p>
+  <pre id="results">Noch keine Messung.</pre>
+</main><script type="module" src="./audio.ts"></script></body>
+</html>

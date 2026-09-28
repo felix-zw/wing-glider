@@ -6,6 +6,7 @@ import type { Position } from './resources';
 export interface FlyingAsteroid extends Position { id: number; radius: number; vx: number; vz: number; rotation: number; respawns: number }
 export interface CollisionActor extends Position { speed: number; heading: number; health: number; impactCooldown: number; lastDamage: 'storm' | 'wall' | 'asteroid' | null }
 export function impact(s: CollisionActor, relativeSpeed: number, cause: 'wall' | 'asteroid') {
+  relativeSpeed = Math.abs(relativeSpeed);
   if (relativeSpeed <= COLLISION.damageThreshold || s.impactCooldown > 0) return;
   s.health = Math.max(0, s.health - Math.min(COLLISION.maxDamage, (relativeSpeed - COLLISION.damageThreshold) * COLLISION.damageScale));
   s.impactCooldown = COLLISION.cooldown; s.lastDamage = cause;
