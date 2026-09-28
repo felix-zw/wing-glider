@@ -280,7 +280,7 @@ export class GameAudio {
     if (this.active !== running) { this.active = running; this.graph?.setActive(running); }
     if (!running || !this.graph) return;
     const speed = clamp(Math.abs(state.speed) / CONFIG.maxSpeed);
-    const thrust = input.brake > 0 ? state.speed < 0 ? clamp(input.brake) * .45 : 0 : clamp(input.thrust);
+    const thrust = clamp((Math.abs(state.forces.forward)+Math.abs(state.forces.side)*.65+Math.abs(state.forces.yaw)*.5)/CONFIG.acceleration);
     this.graph.setLoops(.028 + speed * .067 + thrust * .072, state.resources.laserActive && input.mine ? .23 : 0,
       state.environment.kind === 'planet' ? state.phase === 'storm' ? .27 : state.phase === 'warning' ? .16 : .095 : 0);
     this.graph.smooth(this.graph.engineFundamental.frequency, 55 + speed * 34 + thrust * 18, .12);

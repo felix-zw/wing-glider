@@ -26,6 +26,8 @@
       <button data-preset="aster-ridge">Aster · Felsrücken</button>
       <button data-preset="aster-uphill">Fahrzeug · Bergauf</button><button data-preset="aster-sidehill">Fahrzeug · Seitenhang</button>
       <button data-preset="belt-outcrop">Asteroiden · Kristallader</button>
+      <button data-preset="aster-drift">Aster · Drift</button><button data-preset="aster-reverse">Fahrzeug · Rückwärts</button>
+      <button data-preset="belt-correction">Weltraum · Seitenschub</button><button data-preset="belt-glide">Weltraum · Freies Gleiten</button>
     </div>
     <div class="row">
       <label>Qualität <select id="quality"><option value="high">Hoch</option><option value="standard">Standard</option></select></label>
@@ -35,6 +37,7 @@
     <small>Standbilder verwenden feste Simulationszustände. Fahrzeug: 2,6× Zoom; Felsader, Abgebaut und Kristallader: 1,8×; Felsrücken: 1,1×. H blendet dieses Prüfpanel ein/aus.</small>
     <div class="row"><label><input id="warmup" type="checkbox" checked> 3 s Aufwärmen pro Szene</label></div>
     <div class="row"><button id="benchmark">4 × 60 s Leistung messen</button><button id="stop" disabled>Stoppen</button><button id="download" disabled>JSON speichern</button></div>
+    <div class="row"><button id="maneuver-benchmark">2 × 15 s Drift und Weltraum messen</button></div>
     <div class="row"><button id="baseline">2 × 10 s RAF-Baseline</button><button id="json-toggle" disabled aria-expanded="false" aria-controls="report-json">JSON anzeigen</button></div>
     <progress id="progress" max="1" value="0" aria-label="Benchmark progress"></progress>
     <p id="status" role="status">GLB-Modelle und Texturen werden geladen…</p>

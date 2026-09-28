@@ -9,6 +9,7 @@ import { Landscape } from './landscape';
 import { Atmosphere } from './atmosphere';
 import { RenderPipeline, type Quality } from './render-pipeline';
 import { turretYaw, vehiclePose, type VehiclePose } from './vehicle-pose';
+import { thrusterLevels, type ThrusterName } from './flight-motion';
 
 export class World {
   readonly scene = new THREE.Scene();
@@ -21,7 +22,7 @@ export class World {
   private turret: THREE.Object3D | null = null;
   private muzzle = new THREE.Object3D();
   private muzzlePosition = new THREE.Vector3();
-  private exhaust: THREE.Mesh[] = [];
+  private exhaust: {mesh:THREE.Mesh;name:ThrusterName;intensity:number}[] = [];
   private root = new THREE.Group();
   private resources!: ResourceWorld;
   private world: LevelWorld;
@@ -92,9 +93,12 @@ export class World {
     if (!this.muzzle.parent) { this.muzzle.position.set(0, 1, -2.7); (this.turret ?? this.ship).add(this.muzzle); }
     const geometry = new THREE.ConeGeometry(.24, 2.3, 12); geometry.rotateX(Math.PI / 2); geometry.translate(0, 0, 1.05);
     const material = new THREE.MeshBasicMaterial({ color: new THREE.Color('#7febd5').multiplyScalar(2.2), transparent: true, opacity: .7, depthWrite: false, blending: THREE.AdditiveBlending });
-    for (const name of ['exhaust_left', 'exhaust_right']) {
+    for (const name of ['exhaust_left', 'exhaust_right','reverse_left','reverse_right','side_left_front','side_left_aft','side_right_front','side_right_aft'] as const) {
       const anchor = this.ship.getObjectByName(name); if (!anchor) continue;
-      const flame = new THREE.Mesh(geometry, material); anchor.add(flame); this.exhaust.push(flame);
+      const flame = new THREE.Mesh(geometry, material);flame.name='flame_'+name;
+      if(name.startsWith('reverse'))flame.rotation.y=Math.PI;
+      if(name.startsWith('side_')){flame.rotation.y=name.includes('_left_')?-Math.PI/2:Math.PI/2;flame.scale.set(.6,.6,.6);}
+      anchor.add(flame); this.exhaust.push({mesh:flame,name,intensity:0});
     }
     this.scene.add(this.ship);
   }
@@ -145,7 +149,13 @@ export class World {
       this.turret.rotation.y=turretYaw(s.heading,this.pose.pitch,this.pose.roll,s.turret);
     }
     this.ship.updateMatrixWorld(true); this.muzzle.getWorldPosition(this.muzzlePosition); this.resources.render(s, this.muzzlePosition, dt > 0);
-    for (const flame of this.exhaust) { flame.visible = !s.dead && s.speed >= 0 && (thrust > 0 || s.speed > 3); flame.scale.z = .35 + thrust * .85 + Math.sin(s.elapsed * 35) * .06; }
+    const jets=thrusterLevels(s.forces);
+    for (const jet of this.exhaust) {
+      const target=s.dead?0:jets[jet.name];jet.intensity=dt>0?THREE.MathUtils.lerp(jet.intensity,target,1-Math.exp(-dt*20)):target;
+      jet.mesh.visible=jet.intensity>.025;
+      const small=jet.name.startsWith('side_')?.6:1;
+      jet.mesh.scale.set(small*(.45+jet.intensity*.55),small*(.45+jet.intensity*.55),small*(.2+jet.intensity*1.1)*(1+Math.sin(s.elapsed*35)*.04));
+    }
     this.atmosphere.update(s, dt, thrust, this.follow); this.landscape.animate(s.elapsed);
     const intensity = this.atmosphere.intensity; this.sun.intensity = (space ? 3.2 : 3.5) - intensity * 1.7;
     if (this.scene.fog instanceof THREE.FogExp2) this.scene.fog.density = .00065 + intensity * .0015;

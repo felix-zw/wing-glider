@@ -9,6 +9,7 @@ import { FIRST_MISSION, objectiveCounts } from './missions';
 import { LEVELS, getLevelWorld, groundHeight, type LevelId } from './levels';
 import { shelterRoute } from './navigation';
 import { GameAudio } from './audio';
+import { forwardSpeed, resetDrive } from './flight-motion';
 
 let objectives = objectiveCounts(FIRST_MISSION.objective);
 const objectiveMarkup = () => objectives.map(o => `<div class="objective" style="--ore:${o.resource ? RESOURCES[o.resource].color : '#c5d7b3'}"><div><span><i class="ore-dot"></i>${o.label}</span><strong id="goal-${o.id}">0 / ${o.amount}</strong></div><div class="track"><i id="goal-fill-${o.id}"></i></div></div>`).join('');
@@ -36,8 +37,8 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <section class="navigation"><div class="map-heading"><span class="eyebrow">GELÄNDERADAR</span><span id="coordinates">025 / 036</span></div><canvas id="minimap" width="240" height="200" aria-label="Karte mit Schutzmulden, Rohstoffen, ATLAS und Fahrzeugposition"></canvas><div class="map-footer"><span>○ SCHUTZ · ◇ ERZ · ▣ ATLAS</span><span>420 × 420 M</span></div></section>
   <section class="interaction" aria-label="Abbau und Entladen"><div class="interaction-top"><strong id="interaction-title">ERZ-LASER BEREIT</strong><span id="base-distance"></span></div><p id="interaction-hint">Auf ein Vorkommen zielen · X oder Shift halten.</p><div class="track"><i id="mining-fill"></i></div></section>
   <div id="mission-success" role="status" hidden>AUFTRAG ERFÜLLT <span>ATLAS ist versorgt. Deine Expedition geht weiter.</span></div>
-  <footer><div class="controls keyboard"><span><kbd>W</kbd> Schub</span><span><kbd>A</kbd><kbd>D</kbd> Lenken</span><span><kbd>S / ↓ / SPACE</kbd> Bremse / zurück</span><span><kbd>MAUS</kbd> Zielen</span><span><kbd>X / SHIFT</kbd> Abbau</span><span><kbd>E</kbd> Entladen</span></div><div class="controls gamepad" hidden><span><kbd>RT</kbd> Schub</span><span><kbd>LS</kbd> Lenken</span><span><kbd>LT</kbd> Bremse / zurück</span><span><kbd>RS</kbd> Zielen</span><span><kbd>RB</kbd> Abbau</span><span><kbd>Y</kbd> Entladen</span></div><span id="input-device">TASTATUR + MAUS <i class="live-dot"></i></span></footer>
-  <div id="overlay" role="dialog" aria-modal="true" aria-labelledby="dialog-title" hidden><section class="dialog"><p class="eyebrow" id="dialog-kicker">FLUG UNTERBROCHEN</p><h2 id="dialog-title">Kurze Verschnaufpause.</h2><p id="dialog-body">Dein Speeder wartet auf dich.</p><div class="quality-setting"><label for="quality">DARSTELLUNG</label><select id="quality" aria-describedby="quality-hint"><option value="high">Hoch</option><option value="standard">Standard</option></select><p id="quality-hint">Volle Landschaftsdetails, Licht und Effekte.</p></div><div class="audio-setting"><label for="volume">LAUTSTÄRKE <output id="volume-value" for="volume">55%</output></label><input id="volume" type="range" min="0" max="100" step="5" value="55" aria-label="Lautstärke"><button id="mute" type="button" aria-pressed="false">Ton ausschalten</button></div><button id="resume" class="primary">Weiterfliegen <span>↗</span></button><button id="restart">Level neu starten</button><button id="choose-level">Level wählen</button></section></div>
+  <footer><div class="controls keyboard"><span><kbd>W</kbd> Schub</span><span><kbd>A</kbd><kbd>D</kbd> Lenken</span><span><kbd>S / ↓</kbd> Bremse / R</span><span><kbd>SPACE</kbd> Drift / Gleiten</span><span><kbd>MAUS</kbd> Zielen</span><span><kbd>X / SHIFT</kbd> Abbau</span><span><kbd>E</kbd> Entladen</span></div><div class="controls gamepad" hidden><span><kbd>RT</kbd> Schub</span><span><kbd>LS</kbd> Lenken</span><span><kbd>LT</kbd> Bremse / R</span><span><kbd>A</kbd> Drift / Gleiten</span><span><kbd>RS</kbd> Zielen</span><span><kbd>RB</kbd> Abbau</span><span><kbd>Y</kbd> Entladen</span></div><span id="input-device">TASTATUR + MAUS <i class="live-dot"></i></span></footer>
+  <div id="overlay" role="dialog" aria-modal="true" aria-labelledby="dialog-title" hidden><section class="dialog"><p class="eyebrow" id="dialog-kicker">FLUG UNTERBROCHEN</p><h2 id="dialog-title">Kurze Verschnaufpause.</h2><p id="dialog-body">Dein Speeder wartet auf dich.</p><details class="driving-help"><summary>Steuerung</summary><p><b>Gas:</b> W / ↑ oder RT. <b>Lenken:</b> A/D, Pfeile oder linker Stick.</p><p><b>Bremse:</b> S / ↓ oder LT. Für rückwärts erst anhalten, loslassen und erneut halten.</p><p><b>Handbremse:</b> Space oder A. Auf Aster driften; im Weltraum ohne seitliche Stabilisierung gleiten.</p><p><b>Touch:</b> Gas halten oder doppelt tippen für Dauergas. Ein weiterer Tipp oder die Bremse beendet Dauergas. Rechts zielen und abbauen.</p></details><div class="quality-setting"><label for="quality">DARSTELLUNG</label><select id="quality" aria-describedby="quality-hint"><option value="high">Hoch</option><option value="standard">Standard</option></select><p id="quality-hint">Volle Landschaftsdetails, Licht und Effekte.</p></div><div class="audio-setting"><label for="volume">LAUTSTÄRKE <output id="volume-value" for="volume">55%</output></label><input id="volume" type="range" min="0" max="100" step="5" value="55" aria-label="Lautstärke"><button id="mute" type="button" aria-pressed="false">Ton ausschalten</button></div><button id="resume" class="primary">Weiterfliegen <span>↗</span></button><button id="restart">Level neu starten</button><button id="choose-level">Level wählen</button></section></div>
   <div id="level-select" role="dialog" aria-modal="true" aria-label="Level auswählen" hidden><section class="level-dialog"><p class="eyebrow">WING GLIDER / EXPEDITIONEN</p><h2>Wohin führt dein Flug?</h2><p class="level-intro">Zwei Welten. Ein Auftrag: wertvolle Rohstoffe zu ATLAS bringen.</p><div class="level-cards">${Object.values(LEVELS).map((level, index) => `<button class="level-card ${level.id}" data-level="${level.id}" aria-label="${level.name} starten"><div class="level-art" aria-hidden="true"><span class="sector-number">0${index + 1}</span><i></i><i></i><i></i><b class="orbit-line"></b></div><small>${level.subtitle}</small><strong>${level.name}</strong><p>${level.description}</p><span>EXPEDITION STARTEN <b>↗</b></span></button>`).join('')}</div><p class="level-note">Jeder Start beginnt mit leerer Fracht und einem neuen Auftrag. Die laufende Expedition wird zurückgesetzt.</p><button id="cancel-level" hidden>Zurück zur Expedition</button></section></div>
   <div id="loading" role="dialog" aria-modal="true" aria-labelledby="loading-title"><section class="loading-dialog"><span class="loading-mark" aria-hidden="true">≋</span><p class="eyebrow">WING GLIDER / FLUGVORBEREITUNG</p><h2 id="loading-title">Deine Expedition wird vorbereitet.</h2><p id="loading-label" role="status" aria-live="polite">Fahrzeug und Welten werden geladen.</p><div id="loading-progress" role="progressbar" aria-label="Assets laden" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="loading-fill"></i></div><span id="loading-count">VERBINDUNG ZU ATLAS</span><button id="retry-loading" class="primary" hidden>Erneut versuchen <span>↗</span></button></section></div>
 `;
@@ -116,7 +117,7 @@ function showDialog() {
   el('pause').setAttribute('aria-label', paused ? 'Spiel fortsetzen' : 'Spiel pausieren');
 }
 function togglePause() { if (ready && !graphicsLost && !state.dead && !choosing) { paused = !paused; controls.clear(); showDialog(); if (paused) el('resume').focus(); else (document.activeElement as HTMLElement)?.blur(); } }
-const controls = new Controls(world.renderer.domElement, togglePause);
+const controls = new Controls(world.renderer.domElement, togglePause,{reset:()=>resetDrive(state)});
 el('pause').addEventListener('click', togglePause);
 el('resume').addEventListener('click', togglePause);
 function startLevel(id: LevelId) {
@@ -230,7 +231,8 @@ function updateHud(thrust: number, brake: number) {
   updateResourceHud();
   const protectedNow = isProtected(state), timeLeft = Math.ceil(phaseDuration(state.phase) - state.phaseTime);
   el('speed').textContent = String(Math.round(Math.abs(state.speed) * 3.6)).padStart(3, '0');
-  el('drive-state').textContent = state.speed<-.1 ? 'RÜCKWÄRTS' : brake ? 'BREMSE' : thrust ? 'SCHUB' : state.speed > 0.1 ? 'GLEITFLUG' : 'BEREIT';
+  controls.touch.setEnvironment(state.environment.kind==='space');
+  el('drive-state').textContent = state.gliding?'FREIES GLEITEN':state.drifting?'DRIFT':forwardSpeed(state)<-.3?'RÜCKWÄRTS':brake?'BREMSE':controls.touch.throttle.latched?'GAS FIX':thrust?'SCHUB':state.reverseArmed?'R BEREIT':state.speed>.1?'GLEITFLUG':'BEREIT';
   el('speed-fill').style.width = `${Math.abs(state.speed) / CONFIG.maxSpeed * 100}%`;
   el('health-value').textContent = `${Math.ceil(state.health)}%`;
   el('health-fill').style.width = `${state.health}%`;
@@ -312,9 +314,9 @@ function frame(now: number) {
   if (!ready || graphicsLost) return;
   const dt = Math.min((now - previous) / 1000, 0.05); previous = now;
   controls.setActive(!paused&&!choosing&&!state.dead&&!document.hidden);
-  const input = controls.read(controls.pointer.active ? world.mouseAim(controls.pointer, state) : null,state.heading);
+  const input = controls.read(controls.pointer.active ? world.mouseAim(controls.pointer, state) : null);
   const device=controls.touch.enabled?'touch':controls.gamepadConnected?'gamepad':'keyboard';
-  if(document.body.dataset.controls!==device)document.body.dataset.controls=device;
+  if(document.body.dataset.controls!==device){document.body.dataset.controls=device;resetDrive(state);}
   if (!paused && !state.dead && !document.hidden) {
     advance(state, input, dt);
     if (state.dead) { controls.clear(); showDialog(); }

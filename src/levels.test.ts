@@ -1,3 +1,4 @@
+import { setVelocity } from './flight-motion';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { getLevelWorld, getSolidFootprint, groundHeight, type LevelId, type Solid } from './levels';
@@ -119,10 +120,10 @@ test('Aster has climbable hills distinct from unscalable walls', () => {
 test('swept collision stops high-speed crossings and permits slow harmless contact', () => {
   const world = getLevelWorld();
   assert.ok(sweep({ x: -100, z: 45 }, { x: 0, z: 45 }, world.solids, COLLISION.shipRadius));
-  const s = createState(); s.x = 0; s.z = 45; s.heading = -Math.PI / 2; s.speed = 38;
+  const s = createState(); s.x = 0; s.z = 45; s.heading = -Math.PI / 2; setVelocity(s,38);
   advance(s, neutralInput(), 1); assert.ok(s.x > -17.51); assert.ok(s.health < 100); assert.equal(s.lastDamage, 'wall');
   assert.ok(!world.solids.some(solid => contains(solid, s, COLLISION.shipRadius)));
-  const slow = createState(); slow.x = -17.4; slow.z = 45; slow.heading = -Math.PI / 2; slow.speed = 2;
+  const slow = createState(); slow.x = -17.4; slow.z = 45; slow.heading = -Math.PI / 2; setVelocity(slow,2);
   advance(slow, neutralInput(), 0.2); assert.equal(slow.health, 100);
   const first = s.health; impact(s, 38, 'wall'); const hit = s.health;
   impact(s, 38, 'wall'); assert.equal(s.health, hit); assert.ok(hit <= first);

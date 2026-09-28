@@ -1,0 +1,36 @@
+Running real Web Audio and offline signal checks…
+PASS User gesture unlocks a real AudioContext
+PASS Repeated concurrent unlock is harmless
+PASS Active Aster flight enables engine and desert layers
+PASS Reverse speed and reverse thrust raise the engine hum above idle
+PASS Forward braking powers front thrusters and their engine hum
+PASS An active mining laser enables its loop
+PASS One collection schedules one event sound
+PASS An unchanged snapshot does not repeat collection audio
+PASS Space flight has no desert ambient layer
+PASS Level reset releases sounds from the previous expedition
+PASS Pause fades every loop and closes the audio gate
+PASS Mute suppresses active gameplay audio
+PASS Death suppresses active gameplay audio
+PASS Dispose stops all voices and is idempotent
+PASS flight: finite audible signal (RMS 0.06521)
+PASS flight: no clipping (peak 0.1240)
+PASS flight: clean silent tail
+PASS laser: finite audible signal (RMS 0.02382)
+PASS laser: no clipping (peak 0.0924)
+PASS laser: clean silent tail
+PASS break: finite audible signal (RMS 0.00648)
+PASS break: no clipping (peak 0.1317)
+PASS break: clean silent tail
+PASS collect: finite audible signal (RMS 0.00525)
+PASS collect: no clipping (peak 0.0812)
+PASS collect: clean silent tail
+PASS unload: finite audible signal (RMS 0.00710)
+PASS unload: no clipping (peak 0.0960)
+PASS unload: clean silent tail
+PASS desert: finite audible signal (RMS 0.02639)
+PASS desert: no clipping (peak 0.0908)
+PASS desert: clean silent tail
+PASS Zero master volume renders exact digital silence
+
+ALL AUDIO CHECKS PASSED

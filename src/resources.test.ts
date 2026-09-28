@@ -1,3 +1,4 @@
+import { setVelocity } from './flight-motion';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { RESOURCE_CONFIG as R, TRANSPORTER } from './config';
@@ -87,10 +88,10 @@ test('full cargo leaves particles available and mining continues until the finit
 test('unloading requires a press, the loading zone, and low speed; one press is not retried across substeps', () => {
   const s = createState(); s.resources.cargo.ferrite = 8;
   advance(s, unload, 0.1); assert.equal(s.resources.cargo.ferrite, 8);
-  s.x = 0; s.z = 0; s.speed = 3;
+  s.x = 0; s.z = 0; setVelocity(s,3);
   advance(s, { ...unload, brake: 1 }, 0.5); assert.equal(s.resources.cargo.ferrite, 8);
   advance(s, neutralInput(), 0.5); assert.equal(s.resources.storage.ferrite, 0);
-  s.x = 8; s.z = 0; s.speed = 2;
+  s.x = 8; s.z = 0; setVelocity(s,2);
   advance(s, unload, 0.01); assert.equal(s.resources.cargo.ferrite, 0); assert.equal(s.resources.storage.ferrite, 8);
   advance(s, unload, 1); assert.equal(s.resources.storage.ferrite, 8); assert.equal(s.mission.counts['ferrite-delivery'], 8);
 });

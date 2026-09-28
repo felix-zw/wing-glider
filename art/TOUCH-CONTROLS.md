@@ -1,5 +1,7 @@
 # Touch control verification — 2026-09-28
 
+Current controls and validation: [Drift and space flight](DRIFT-SPACE.md). The mappings below document the previous iteration.
+
 The game now supports translucent twin sticks in both expeditions. The left stick
 selects an absolute on-screen flight direction and analog thrust. The speeder
 turns toward that direction before accelerating into it. Pulling down points the

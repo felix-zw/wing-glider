@@ -4,7 +4,7 @@ import { seededRandom, type LevelWorld, type Solid } from './levels';
 import type { Position } from './resources';
 
 export interface FlyingAsteroid extends Position { id: number; radius: number; vx: number; vz: number; rotation: number; respawns: number }
-export interface CollisionActor extends Position { speed: number; heading: number; health: number; impactCooldown: number; lastDamage: 'storm' | 'wall' | 'asteroid' | null }
+export interface CollisionActor extends Position { vx:number; vz:number; health: number; impactCooldown: number; lastDamage: 'storm' | 'wall' | 'asteroid' | null }
 export function impact(s: CollisionActor, relativeSpeed: number, cause: 'wall' | 'asteroid') {
   relativeSpeed = Math.abs(relativeSpeed);
   if (relativeSpeed <= COLLISION.damageThreshold || s.impactCooldown > 0) return;
@@ -39,11 +39,11 @@ export function advanceHazards(asteroids: FlyingAsteroid[], world: LevelWorld, p
     const hit = sweep({ x: previous.x - old.x, z: previous.z - old.z }, { x: player.x - a.x, z: player.z - a.z },
       [{ kind: 'asteroid', id: `hazard-${a.id}`, x: 0, z: 0, radius: a.radius, height: a.radius * 2 }], COLLISION.shipRadius);
     if (hit && Math.hypot(player.x - world.base.x, player.z - world.base.z) > SPACE.shieldRadius) {
-      impact(player, Math.hypot(Math.sin(player.heading) * player.speed - a.vx, -Math.cos(player.heading) * player.speed - a.vz), 'asteroid');
+      impact(player, Math.hypot(player.vx-a.vx,player.vz-a.vz), 'asteroid');
       const separated = { x: a.x + hit.nx * (a.radius + COLLISION.shipRadius + 0.01), z: a.z + hit.nz * (a.radius + COLLISION.shipRadius + 0.01) };
       const safe = moveOutside(previous, separated, world.solids, COLLISION.shipRadius).position;
       player.x = Math.max(-CONFIG.worldHalf + 3, Math.min(CONFIG.worldHalf - 3, safe.x));
-      player.z = Math.max(-CONFIG.worldHalf + 3, Math.min(CONFIG.worldHalf - 3, safe.z)); player.speed *= 0.35;
+      player.z = Math.max(-CONFIG.worldHalf + 3, Math.min(CONFIG.worldHalf - 3, safe.z)); player.vx *= 0.35;player.vz *= 0.35;
       const dot = a.vx * hit.nx + a.vz * hit.nz;
       if (dot > 0) { a.vx -= 2 * dot * hit.nx; a.vz -= 2 * dot * hit.nz; }
     }

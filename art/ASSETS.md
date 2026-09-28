@@ -23,7 +23,7 @@ All coordinates below are **game/glTF meters**, with **+Y up and -Z forward**. L
 
 | Asset | Size (X × Y × Z) | Meshes / material draw calls | Triangles |
 | --- | --- | --- | --- |
-| `public/assets/models/speeder.glb` | 5.96 × 1.691 × 7.915 m | 14 | 23,668 |
+| `public/assets/models/speeder.glb` | 6.051 × 1.691 × 7.915 m | 14 | 25,924 |
 | `public/assets/models/atlas.glb` | 10.65 × 6.37 × 20.43 m | 10 | 23,424 |
 
 The speeder origin is the center of its structural keel. Its lowest surface is Y=-0.46 m, so place it above the terrain by the desired hover height plus at least 0.46 m. ATLAS has ground-level origin and its lowest foot pad is Y=0.03 m. ATLAS bounds include its deployed aft ramp, service platform and ground cargo case. These are visual meshes; gameplay should use the level's simplified collider rather than all triangles.
@@ -36,6 +36,9 @@ The speeder origin is the center of its structural keel. Its lowest surface is Y
 | `laser_socket` | `mining_turret` | (0, 0.28, -0.99) | Transform to world space for beam origin. Local -Z is the beam direction. |
 | `exhaust_left` | `speeder` | (-2.37, 0, 3.62) | Exhaust origin; exhaust travels aft along +Z. |
 | `exhaust_right` | `speeder` | (2.37, 0, 3.62) | Exhaust origin; exhaust travels aft along +Z. |
+| `reverse_left/right` | `speeder` | (±2.37, -0.01, -3.20) | Front engine exhaust along -Z for braking/reverse. |
+| `side_left_front/aft` | `speeder` | (-3.035, 0.04, ∓1.60) | Four modeled side nozzles; left exhaust along -X. |
+| `side_right_front/aft` | `speeder` | (3.035, 0.04, ∓1.60) | Right exhaust along +X; opposing fore/aft pairs produce yaw. |
 | `cargo_socket` | `speeder` | (0, 0.90, 2.02) | Collection effect destination. |
 
 ### ATLAS attachments

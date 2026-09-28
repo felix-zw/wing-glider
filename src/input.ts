@@ -5,6 +5,7 @@ export class Controls {
   private keys = new Set<string>();
   private unloadQueued = false;
   private padUnloadHeld = false;
+  private brakeHeld=false;
   private keyboardUsed=false;
   private touchSeen=false;
   private active=false;
@@ -12,8 +13,8 @@ export class Controls {
   readonly touch:TouchControls;
   pointer = { x: 0, y: 0, active: false };
   gamepadConnected = false;
-  constructor(canvas: HTMLCanvasElement, togglePause: () => void, private options:{touchCapable?:()=>boolean}={}) {
-    this.touch=new TouchControls(canvas.parentElement??document.body);
+  constructor(canvas: HTMLCanvasElement, togglePause: () => void, private options:{touchCapable?:()=>boolean;reset?:()=>void}={}) {
+    this.touch=new TouchControls(canvas.parentElement??document.body,()=>this.options.reset?.());
     const signal=this.abort.signal;
     window.addEventListener('keydown', e => {
       this.keyboardUsed=true;this.refreshTouch();
@@ -27,6 +28,7 @@ export class Controls {
     },{signal});
     window.addEventListener('keyup', e => this.keys.delete(e.code),{signal});
     window.addEventListener('blur', () => this.clear(),{signal});
+    window.addEventListener('resize', () => {if(this.touch.enabled)this.clear();},{signal});
     document.addEventListener('visibilitychange', () => this.clear(),{signal});
     window.addEventListener('pointerdown',event=>{
       if(event.pointerType==='touch'){this.touchSeen=true;this.keyboardUsed=false;this.keys.clear();this.unloadQueued=false;this.pointer.active=false;this.refreshTouch();}
@@ -46,14 +48,15 @@ export class Controls {
     const capable=this.touchSeen||(this.options.touchCapable?.()??(navigator.maxTouchPoints>0&&matchMedia('(any-pointer: coarse)').matches));
     this.touch.setEnabled(shouldShowTouch(capable,this.keyboardUsed,this.gamepadConnected,this.active));
   }
-  setActive(active:boolean) {this.active=active;this.refreshTouch();}
-  clear() { this.keys.clear(); this.pointer.active = false; this.unloadQueued = false; this.touch.clear(); }
+  setActive(active:boolean) {if(this.active&&!active)this.clear();this.active=active;this.refreshTouch();}
+  clear() { this.keys.clear(); this.pointer.active = false; this.unloadQueued = false;this.brakeHeld=false;this.touch.clear();this.options.reset?.(); }
   dispose() {this.clear();this.abort.abort();this.touch.dispose();}
-  read(mouseAim: number | null, heading=0): FlightInput {
+  read(mouseAim: number | null): FlightInput {
     const has = (...codes: string[]) => codes.some(c => this.keys.has(c));
     const input = neutralInput();
     input.thrust = has('KeyW', 'ArrowUp') ? 1 : 0;
-    input.brake = has('Space', 'KeyS', 'ArrowDown') ? 1 : 0;
+    input.brake = has('KeyS', 'ArrowDown') ? 1 : 0;
+    input.handbrake=has('Space')?1:0;
     input.steer = Number(has('KeyD', 'ArrowRight')) - Number(has('KeyA', 'ArrowLeft'));
     input.aim = this.pointer.active ? mouseAim : null;
     input.mine = has('KeyX', 'ShiftLeft', 'ShiftRight');
@@ -62,16 +65,17 @@ export class Controls {
     this.gamepadConnected = !!pad;
     this.refreshTouch();
     if(this.touch.enabled) {
-      const touch=this.touch.read(heading);
+      const touch=this.touch.read();
       input.steer=touch.steer;input.thrust=touch.thrust;input.brake=touch.brake;
+      input.handbrake=touch.handbrake;
       input.aim=touch.aim;input.mine=touch.mine;input.unloadPressed||=touch.unloadPressed;
     }
     if (pad) {
       const steer = deadzone(pad.axes[0] ?? 0);
       if (Math.abs(steer) > Math.abs(input.steer)) input.steer = steer;
-      const vertical=deadzone(pad.axes[1]??0);
-      input.thrust = Math.max(input.thrust, -vertical, pad.buttons[7]?.value ?? 0);
-      input.brake = Math.max(input.brake, vertical, pad.buttons[6]?.value ?? 0);
+      input.thrust = Math.max(input.thrust, pad.buttons[7]?.value ?? 0);
+      input.brake = Math.max(input.brake, pad.buttons[6]?.value ?? 0);
+      input.handbrake=Math.max(input.handbrake,pad.buttons[0]?.value??0);
       input.mine ||= !!pad.buttons[5]?.pressed;
       const unload = !!pad.buttons[3]?.pressed;
       input.unloadPressed ||= unload && !this.padUnloadHeld;
@@ -80,6 +84,7 @@ export class Controls {
       if (Math.hypot(x, y) > 0.2) input.aim = Math.atan2(x, -y);
     }
     else this.padUnloadHeld = false;
+    input.brakePressed=input.brake>.05&&!this.brakeHeld;this.brakeHeld=input.brake>.05;
     return input;
   }
 }

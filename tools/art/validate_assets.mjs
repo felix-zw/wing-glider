@@ -7,7 +7,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const directory = new URL('../../public/assets/models/', import.meta.url);
 const expected = {
-  speeder: { maxMeshes: 35, nodes: ['mining_turret', 'laser_socket', 'exhaust_left', 'exhaust_right', 'cargo_socket'] },
+  speeder: { maxMeshes: 35, nodes: ['mining_turret', 'laser_socket', 'exhaust_left', 'exhaust_right', 'reverse_left', 'reverse_right', 'side_left_front', 'side_left_aft', 'side_right_front', 'side_right_aft', 'cargo_socket'] },
   atlas: { maxMeshes: 70, nodes: ['loading_socket', 'worklight_left', 'worklight_right'] },
 };
 

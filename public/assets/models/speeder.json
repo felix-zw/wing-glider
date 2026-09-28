@@ -5,24 +5,24 @@
   "forward": "-Z",
   "bounds": {
     "min": [
-      -2.98,
+      -3.0255,
       -0.46,
       -4.3145
     ],
     "max": [
-      2.98,
+      3.0255,
       1.231,
       3.6005
     ],
     "size": [
-      5.96,
+      6.051,
       1.691,
       7.915
     ]
   },
   "mesh_count": 14,
   "material_count": 9,
-  "triangle_count": 23668,
+  "triangle_count": 25924,
   "sockets": {
     "cargo_socket": [
       0.0,
@@ -48,6 +48,36 @@
       0.0,
       0.28,
       -0.99
+    ],
+    "reverse_left": [
+      -2.37,
+      -0.01,
+      -3.2
+    ],
+    "reverse_right": [
+      2.37,
+      -0.01,
+      -3.2
+    ],
+    "side_left_aft": [
+      -3.035,
+      0.04,
+      1.6
+    ],
+    "side_left_front": [
+      -3.035,
+      0.04,
+      -1.6
+    ],
+    "side_right_aft": [
+      3.035,
+      0.04,
+      1.6
+    ],
+    "side_right_front": [
+      3.035,
+      0.04,
+      -1.6
     ]
   },
   "socket_positions_are": "local to parent; laser_socket is relative to mining_turret"

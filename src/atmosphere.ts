@@ -116,11 +116,11 @@ export class Atmosphere {
     if(this.world.definition.environment==='space')return;
     this.emitClock+=dt;
     const interval=this.quality==='high'?.04:.085;
-    if(dt>0&&(thrust>0||state.speed<-.5)&&Math.abs(state.speed)>1&&!state.dead&&this.emitClock>=interval){
+    if(dt>0&&state.speed>1&&!state.dead&&this.emitClock>=interval){
       this.emitClock=0;
-      const t=state.elapsed, side=Math.sin(t*31)*1.8, trail=Math.sign(state.speed)*3;
-      const x=state.x-Math.sin(state.heading)*trail+Math.cos(state.heading)*side,z=state.z+Math.cos(state.heading)*trail+Math.sin(state.heading)*side;
-      this.particles[this.next]={x,z,y:groundHeight(this.world,x,z)+.35,age:0,life:1.1+Math.sin(t*27)*.25,scale:1+Math.abs(state.speed)*.045};this.next=(this.next+1)%100;
+      const t=state.elapsed, side=Math.sin(t*31)*(state.drifting?3.5:1.8),dx=state.vx/state.speed,dz=state.vz/state.speed;
+      const x=state.x-dx*3-dz*side,z=state.z-dz*3+dx*side;
+      this.particles[this.next]={x,z,y:groundHeight(this.world,x,z)+.35,age:0,life:1.1+Math.sin(t*27)*.25,scale:(1+state.speed*.045)*(state.drifting?1.35:1)};this.next=(this.next+1)%100;
     }
     let count=0;
     for(const p of this.particles){p.age+=dt;if(p.age>=p.life)continue;const a=p.age/p.life;p.x+=dt*.7;p.z+=dt*.3;

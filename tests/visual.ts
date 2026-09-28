@@ -1,11 +1,12 @@
+import { setVelocity } from '../src/flight-motion';
 import * as THREE from 'three';
 import { World } from '../src/world';
 import { CONFIG } from '../src/config';
 import { advance, createState, neutralInput, type State } from '../src/simulation';
 import { type Deposit } from '../src/resources';
 
-type Preset = 'aster-calm' | 'aster-storm' | 'aster-ridge' | 'aster-cliff' | 'aster-depleted' | 'aster-uphill' | 'aster-sidehill' | 'belt-mining' | 'belt-outcrop' | 'vehicle';
-type Workload = 'calm-flight' | 'aster-mining' | 'sheltered-storm' | 'belt-mining';
+type Preset = 'aster-calm' | 'aster-storm' | 'aster-ridge' | 'aster-cliff' | 'aster-depleted' | 'aster-uphill' | 'aster-sidehill' | 'belt-mining' | 'belt-outcrop' | 'vehicle' | 'aster-drift' | 'aster-reverse' | 'belt-correction' | 'belt-glide';
+type Workload = 'calm-flight' | 'aster-mining' | 'sheltered-storm' | 'belt-mining' | 'aster-drift' | 'space-correction';
 type Quality = 'high' | 'standard';
 interface Sample {
   workload: Workload; frames: number; measuredSeconds: number; averageFps: number; p95FrameMs: number; longestFrameMs: number;
@@ -30,6 +31,7 @@ const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElem
 const world = new World(el('viewport'));
 const status = el('status'), results = el('results'), panel = el('panel'), reopen = el<HTMLButtonElement>('reopen');
 const benchmark = el<HTMLButtonElement>('benchmark'), stop = el<HTMLButtonElement>('stop'), download = el<HTMLButtonElement>('download');
+const maneuverBenchmark=el<HTMLButtonElement>('maneuver-benchmark');
 const baselineButton = el<HTMLButtonElement>('baseline'), baselineStatus = el('baseline-status'), baselineResults = el('baseline-results');
 const jsonToggle = el<HTMLButtonElement>('json-toggle'), jsonText = el<HTMLTextAreaElement>('report-json');
 const quality = el<HTMLSelectElement>('quality'), resolution = el<HTMLSelectElement>('resolution'), warmup = el<HTMLInputElement>('warmup');
@@ -40,7 +42,7 @@ let baselineReport: BaselineReport | null = null;
 const presets = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-preset]'));
 const frame = () => new Promise<number>(resolve => requestAnimationFrame(resolve));
 function setBusy(value: boolean) {
-  busy = value; benchmark.disabled = value; quality.disabled = value; resolution.disabled = value; warmup.disabled = value;
+  busy = value; benchmark.disabled = value; maneuverBenchmark.disabled=value; quality.disabled = value; resolution.disabled = value; warmup.disabled = value;
   baselineButton.disabled = value; jsonToggle.disabled = value || (!report && !baselineReport);
   presets.forEach(button => button.disabled = value);
 }
@@ -58,13 +60,22 @@ function applyResolution() {
   }
 }
 function placeForMining(s: State, d: Deposit) {
-  s.x = d.x + d.surface!.nx * 7; s.z = d.z + d.surface!.nz * 7; s.speed = 0;
+  s.x = d.x + d.surface!.nx * 7; s.z = d.z + d.surface!.nz * 7; setVelocity(s,0);
   s.heading = Math.PI * 0.15; s.turret = Math.atan2(d.x - s.x, -(d.z - s.z));
 }
 function buildPreset(preset: Preset) {
   const s = createState(preset.startsWith('belt-') ? 'belt' : 'aster');
   s.elapsed = 12.375;
-  if (preset === 'aster-storm') {
+  if(preset==='aster-drift') {
+    s.x=80;s.z=140;s.heading=-.6;setVelocity(s,26);advance(s,{...neutralInput(),thrust:1,steer:.65,handbrake:1},.9);
+  } else if(preset==='aster-reverse') {
+    s.heading=-.6;
+    advance(s,{...neutralInput(),brake:1},.01);advance(s,neutralInput(),.01);
+    advance(s,{...neutralInput(),brake:1},.8);
+  } else if(preset==='belt-correction'||preset==='belt-glide') {
+    s.heading=.8;setVelocity(s,18,-12);
+    advance(s,{...neutralInput(),handbrake:preset==='belt-glide'?1:0},.2);
+  } else if (preset === 'aster-storm') {
     s.x = 0; s.z = 4; s.heading = Math.PI * 0.2; s.phase = 'storm'; s.phaseTime = 6;
   } else if (preset === 'aster-uphill') {
     s.x=44;s.z=33;s.heading=0;s.turret=0;
@@ -94,7 +105,7 @@ function buildPreset(preset: Preset) {
 async function showPreset(preset: Preset) {
   if (!loaded || busy) return;
   setBusy(true); currentPreset = preset; state = buildPreset(preset);
-  world.camera.zoom = ['vehicle','aster-uphill','aster-sidehill'].includes(preset) ? 2.6 : preset === 'aster-ridge' ? 1.1 : ['aster-cliff', 'aster-depleted', 'belt-outcrop'].includes(preset) ? 1.8 : 1; world.camera.updateProjectionMatrix();
+  world.camera.zoom = ['vehicle','aster-uphill','aster-sidehill','aster-drift','aster-reverse','belt-correction','belt-glide'].includes(preset) ? 2.6 : preset === 'aster-ridge' ? 1.1 : ['aster-cliff', 'aster-depleted', 'belt-outcrop'].includes(preset) ? 1.8 : 1; world.camera.updateProjectionMatrix();
   world.reset(state); applyResolution();
   status.textContent = 'Standbild wird vorbereitet…';
   // Settle camera and atmospheric transitions deterministically, then stop all
@@ -118,9 +129,11 @@ document.addEventListener('visibilitychange', () => {
 });
 
 function buildWorkload(workload: Workload) {
-  const s = createState(workload === 'belt-mining' ? 'belt' : 'aster');
-  if (workload === 'calm-flight') { s.x = 24; s.z = 36; s.speed = 8; }
+  const s = createState(workload === 'belt-mining'||workload==='space-correction' ? 'belt' : 'aster');
+  if (workload === 'calm-flight') { s.x = 24; s.z = 36; setVelocity(s,8); }
   else if (workload === 'sheltered-storm') { s.x = 0; s.z = 4; s.phase = 'storm'; s.phaseTime = 6; }
+  else if(workload==='aster-drift'){s.x=80;s.z=140;setVelocity(s,25);}
+  else if(workload==='space-correction'){s.x=20;s.z=35;setVelocity(s,18,-10);}
   else placeForMining(s, s.resources.deposits[1]);
   return s;
 }
@@ -130,6 +143,8 @@ function advanceWorkload(workload: Workload, seconds: number) {
   // extraction, collection, collisions and moving hazards use real advance().
   if (state.environment.kind === 'planet') { state.phase = workload === 'sheltered-storm' ? 'storm' : 'calm'; state.phaseTime = 0; }
   if (workload === 'calm-flight') { input.thrust = CONFIG.drag / CONFIG.acceleration; input.steer = (8 / 10) / CONFIG.turnRate; }
+  else if(workload==='aster-drift'){input.thrust=1;input.steer=.65;input.handbrake=state.elapsed%6>3?1:0;}
+  else if(workload==='space-correction'){input.thrust=.6;input.steer=Math.sin(state.elapsed*.7)*.65;input.handbrake=state.elapsed%8>5?1:0;}
   else if (workload.endsWith('mining')) {
     const deposit = state.resources.deposits.find(d => d.id === state.resources.targetId && d.remaining > 0)
       ?? state.resources.deposits.find(d => d.resource === 'copper' && d.remaining > 0)
@@ -171,33 +186,32 @@ jsonToggle.addEventListener('click', () => {
   jsonToggle.textContent = jsonText.hidden ? 'JSON anzeigen' : 'JSON ausblenden';
   if (!jsonText.hidden) { updateJSON(); jsonText.focus(); jsonText.select(); }
 });
-benchmark.addEventListener('click', async () => {
+async function measure(workloads:Workload[],measurementSeconds:number) {
   if (busy || !loaded) return;
   setBusy(true); stop.disabled = false; stopRequested = false; download.disabled = true; progress.value = 0;
   world.camera.zoom = 1; world.camera.updateProjectionMatrix(); applyResolution();
   const buffer = world.renderer.getDrawingBufferSize(new THREE.Vector2()), warmupSeconds = warmup.checked ? 3 : 0;
-  report = { createdAt: new Date().toISOString(), quality: quality.value as Quality, warmupSeconds, measurementSeconds: 60,
+  report = { createdAt: new Date().toISOString(), quality: quality.value as Quality, warmupSeconds, measurementSeconds,
     requestedResolution: resolution.value, drawingBuffer: { width: buffer.x, height: buffer.y }, devicePixelRatio: window.devicePixelRatio,
     browser: navigator.userAgent, ...gpuInfo(), samples: [], status: 'running' };
   printReport();
-  const workloads: Workload[] = ['calm-flight', 'aster-mining', 'sheltered-storm', 'belt-mining'];
   try {
     for (let index = 0; index < workloads.length && !stopRequested; index++) {
       const workload = workloads[index]; state = buildWorkload(workload); world.reset(state); applyResolution();
       let previous = await frame(), warmStart = previous;
       while (previous - warmStart < warmupSeconds * 1000 && !stopRequested) {
         const now = await frame(); advanceWorkload(workload, (now - previous) / 1000); previous = now;
-        status.textContent = `${index + 1}/4 ${workload} · Aufwärmen ${Math.max(0, warmupSeconds - (now - warmStart) / 1000).toFixed(1)} s`;
+        status.textContent = `${index + 1}/${workloads.length} ${workload} · Aufwärmen ${Math.max(0, warmupSeconds - (now - warmStart) / 1000).toFixed(1)} s`;
       }
       if (stopRequested) break;
       const times: number[] = []; let drawCalls = 0, triangles = 0, measuredStart = previous;
-      while (previous - measuredStart < 60000 && !stopRequested) {
+      while (previous - measuredStart < measurementSeconds*1000 && !stopRequested) {
         const now = await frame(), delta = now - previous; previous = now;
         advanceWorkload(workload, delta / 1000); times.push(delta);
         drawCalls += world.renderer.info.render.calls; triangles += world.renderer.info.render.triangles;
         const elapsed = (now - measuredStart) / 1000;
-        progress.value = (index + Math.min(1, elapsed / 60)) / workloads.length;
-        status.textContent = `${index + 1}/4 ${workload} · ${elapsed.toFixed(1)} / 60 s\n${(times.length / elapsed).toFixed(1)} FPS bisher · Tab sichtbar halten`;
+        progress.value = (index + Math.min(1, elapsed / measurementSeconds)) / workloads.length;
+        status.textContent = `${index + 1}/${workloads.length} ${workload} · ${elapsed.toFixed(1)} / ${measurementSeconds} s\n${(times.length / elapsed).toFixed(1)} FPS bisher · Tab sichtbar halten`;
       }
       if (stopRequested) break;
       const ordered = [...times].sort((a, b) => a - b), measuredSeconds = (previous - measuredStart) / 1000;
@@ -210,10 +224,12 @@ benchmark.addEventListener('click', async () => {
     }
     report.status = stopRequested ? 'cancelled' : 'completed';
     status.textContent = stopRequested ? 'Messung abgebrochen. Nur vollständig gemessene Szenen werden gespeichert.'
-      : `Messung abgeschlossen. ${report.samples.filter(s => s.meetsFrameTarget).length}/4 Szenen erreichen das Frame-Ziel.\n${buffer.x === 1920 && buffer.y === 1080 ? '1080p-Zielauflösung bestätigt.' : 'Andere Bildgröße: Ergebnis bestätigt kein 1080p-Leistungsziel.'}`;
+      : `Messung abgeschlossen. ${report.samples.filter(s => s.meetsFrameTarget).length}/${workloads.length} Szenen erreichen das Frame-Ziel.\n${buffer.x === 1920 && buffer.y === 1080 ? '1080p-Zielauflösung bestätigt.' : 'Andere Bildgröße: Ergebnis bestätigt kein 1080p-Leistungsziel.'}`;
   } catch (error) { report.status = 'cancelled'; status.textContent = `Messfehler: ${String(error)}`; }
   finally { setBusy(false); stop.disabled = true; download.disabled = false; updateJSON(true); world.render(state, 0, 0); }
-});
+}
+benchmark.addEventListener('click',()=>void measure(['calm-flight','aster-mining','sheltered-storm','belt-mining'],60));
+maneuverBenchmark.addEventListener('click',()=>void measure(['aster-drift','space-correction'],15));
 
 baselineButton.addEventListener('click', async () => {
   if (busy || !loaded) return;

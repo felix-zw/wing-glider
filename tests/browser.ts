@@ -1,3 +1,4 @@
+import { forwardSpeed, setVelocity } from '../src/flight-motion';
 import { World } from '../src/world';
 import { Controls } from '../src/input';
 import { advance, createState, neutralInput, phaseDuration } from '../src/simulation';
@@ -75,8 +76,25 @@ function checkVehicleGroundClearance() {
   check(Math.abs(ship.rotation.x)<1e-8&&Math.abs(ship.rotation.z)<1e-8,'Space flight resets terrain pitch and roll');
 }
 function deliver() {
-  state.x = 0; state.z = 0; state.speed = 0;
+  state.x = 0; state.z = 0; setVelocity(state,0);
   key('KeyE', true); step(0.01); key('KeyE', false);
+}
+function checkThrusters() {
+  const ship=world.scene.getObjectByName('player-speeder')!;
+  const visible=(name:string)=>ship.getObjectByName('flame_'+name)?.visible===true;
+  const s=createState('belt');s.environment.kind==='space'&&(s.environment.asteroids=[]);
+  world.reset(s);setVelocity(s,20);advance(s,neutralInput(),.1);world.render(s,0,0);
+  check(!visible('exhaust_left')&&!visible('reverse_left'),'Space coasting has no speed-generated exhaust');
+  advance(s,{...neutralInput(),brake:1},1);advance(s,neutralInput(),.01);
+  advance(s,{...neutralInput(),brake:1},.5);world.render(s,0,0);
+  check(visible('reverse_left')&&visible('reverse_right')&&!visible('exhaust_left'),'Actual reverse thrust fires both front engine sockets');
+  const sliding=createState('belt');setVelocity(sliding,14,-10);
+  advance(sliding,neutralInput(),.1);world.render(sliding,0,0);
+  check(visible('side_left_front')&&visible('side_left_aft')&&!visible('side_right_front'),'Space stabilization fires the correct physical side nozzles');
+  advance(sliding,{...neutralInput(),handbrake:1},.1);world.render(sliding,0,0);
+  check(!visible('side_left_front')&&!visible('side_left_aft'),'Free glide stops lateral correction and side exhaust immediately');
+  const turning=createState('belt');advance(turning,{...neutralInput(),steer:1},.1);world.render(turning,0,0);
+  check(visible('side_left_front')&&visible('side_right_aft'),'Turning uses opposing front and rear side jets');
 }
 function weatherBreak() {
   state.x = 0; state.z = 0;
@@ -85,7 +103,7 @@ function weatherBreak() {
   while (state.phase !== 'calm') advance(state, neutralInput(), phaseDuration(state.phase) - state.phaseTime);
 }
 function placeNear(d: Deposit) {
-  state.x = d.x + d.surface!.nx * 5; state.z = d.z + d.surface!.nz * 5; state.speed = 0;
+  state.x = d.x + d.surface!.nx * 5; state.z = d.z + d.surface!.nz * 5; setVelocity(state,0);
   state.turret = Math.atan2(d.x - state.x, -(d.z - state.z));
 }
 async function checkDisposeDuringAssetLoad() {
@@ -136,6 +154,7 @@ document.getElementById('run')!.addEventListener('click', async () => {
     await checkDisposeDuringAssetLoad();
     checkTerrainGPUParity();
     checkVehicleGroundClearance();
+    checkThrusters();
     checkTouchControls(controls,world.renderer.domElement,check);
     state = createState(); controls.clear();
     // Validate edge-triggered keyboard input, including repeat and release behavior.
@@ -146,12 +165,16 @@ document.getElementById('run')!.addEventListener('click', async () => {
       key(code, true); check(controls.read(null).mine, `${code} activates laser`);
       key(code, false); check(!controls.read(null).mine, `${code} releases laser`);
     }
-    for(const code of ['KeyS','ArrowDown','Space']) {
+    for(const code of ['KeyS','ArrowDown']) {
       key(code,true);check(controls.read(null).brake===1,`${code} activates brake/reverse`);
       const backward=createState();advance(backward,controls.read(null),.5);
-      check(backward.speed<0&&backward.z>36,`${code} reverses slowly from standstill`);
+      check(backward.speed===0,`${code} holds at standstill`);
+      key(code,false);advance(backward,controls.read(null),.01);
+      key(code,true);advance(backward,controls.read(null),.5);
+      check(forwardSpeed(backward)<0&&backward.z>36,`${code} reverses after release and another press`);
       key(code,false);check(controls.read(null).brake===0,`${code} releases brake/reverse`);
     }
+    key('Space',true);check(controls.read(null).handbrake===1&&controls.read(null).brake===0,'Space selects independent handbrake / free glide');key('Space',false);
     key('KeyX', true); key('KeyE', true); controls.clear();
     check(!controls.read(null).mine && !controls.read(null).unloadPressed, 'Input clear cancels held and queued actions');
     key('KeyX', false); key('KeyE', false);
@@ -215,7 +238,7 @@ document.getElementById('run')!.addEventListener('click', async () => {
     const snapshot = JSON.stringify(state); advance(state, { ...neutralInput(), mine: true, unloadPressed: true }, 0);
     check(JSON.stringify(state) === snapshot, 'Zero-time pause freezes gameplay');
     }
-    state = createState('aster'); state.x = -5; state.z = 45; state.heading = -Math.PI / 2; state.speed = 38;
+    state = createState('aster'); state.x = -5; state.z = 45; state.heading = -Math.PI / 2; setVelocity(state,38);
     step(1); check(state.lastDamage === 'wall' && state.x > -17.51, 'Aster walls stop the ship and cause impact damage');
     state = createState('belt'); world.reset(state); state.x = -10; state.z = 80;
     if (state.environment.kind === 'space') state.environment.asteroids = [{ id: 0, x: -10, z: 65, radius: 2, vx: 0, vz: 12, rotation: 0, respawns: 0 }];

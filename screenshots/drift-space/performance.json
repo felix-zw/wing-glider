@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "performance": {
+    "createdAt": "2026-09-28T20:39:07.769Z",
+    "quality": "high",
+    "warmupSeconds": 3,
+    "measurementSeconds": 15,
+    "requestedResolution": "1080",
+    "drawingBuffer": {
+      "width": 1920,
+      "height": 1080
+    },
+    "devicePixelRatio": 1.000000014910853,
+    "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "gpuIdentification": "Browser-reported adapter name; hardware model was not independently verified.",
+    "samples": [
+      {
+        "workload": "aster-drift",
+        "frames": 850,
+        "measuredSeconds": 15.014600000000005,
+        "averageFps": 56.611564743649495,
+        "p95FrameMs": 18.10000000000582,
+        "longestFrameMs": 18.60000000000582,
+        "drawCallsMean": 225.2058823529412,
+        "trianglesMean": 2386356.825882353,
+        "geometries": 89,
+        "textures": 31,
+        "meetsFrameTarget": false
+      },
+      {
+        "workload": "space-correction",
+        "frames": 851,
+        "measuredSeconds": 15.0165,
+        "averageFps": 56.6709952385709,
+        "p95FrameMs": 18.10000000000582,
+        "longestFrameMs": 18.60000000000582,
+        "drawCallsMean": 194.7144535840188,
+        "trianglesMean": 513019.4089306698,
+        "geometries": 64,
+        "textures": 34,
+        "meetsFrameTarget": false
+      }
+    ],
+    "status": "completed"
+  },
+  "schedulerBaseline": {
+    "createdAt": "2026-09-28T20:40:14.182Z",
+    "quality": "high",
+    "drawingBuffer": {
+      "width": 1920,
+      "height": 1080
+    },
+    "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "gpuIdentification": "Browser-reported adapter name; hardware model was not independently verified.",
+    "warmupSeconds": 1,
+    "measurementSeconds": 10,
+    "simulationAndRenderingDisabled": true,
+    "samples": [
+      {
+        "mode": "raf-with-dom",
+        "frames": 567,
+        "measuredSeconds": 10.008099999999978,
+        "averageFps": 56.65411017076181,
+        "p95FrameMs": 18.10000000000582,
+        "longestFrameMs": 18.60000000000582
+      },
+      {
+        "mode": "raf-only",
+        "frames": 568,
+        "measuredSeconds": 10.013899999999994,
+        "averageFps": 56.721157590948614,
+        "p95FrameMs": 18.10000000000582,
+        "longestFrameMs": 18.60000000000582
+      }
+    ],
+    "status": "completed"
+  }
+}

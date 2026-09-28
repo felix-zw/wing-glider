@@ -1,3 +1,4 @@
+import { setVelocity } from '../src/flight-motion';
 import { GameAudio, renderAudioPreview, type AudioPreview } from '../src/audio';
 import { createState, neutralInput } from '../src/simulation';
 
@@ -57,15 +58,15 @@ run.addEventListener('click', async () => {
     const state = createState(), input = { ...neutralInput(), thrust: 1 };
     audio.reset(state); audio.update(state, input, true);
     check(audio.diagnostics().loops.flight > 0 && audio.diagnostics().loops.desert > 0, 'Active Aster flight enables engine and desert layers');
-    state.speed = 0; audio.update(state, neutralInput(), true);
+    setVelocity(state,0); audio.update(state, neutralInput(), true);
     const idleHum = audio.diagnostics().loops.flight;
-    state.speed = -4; audio.update(state, neutralInput(), true);
+    setVelocity(state,-4); audio.update(state, neutralInput(), true);
     const reverseCoast = audio.diagnostics().loops.flight;
-    audio.update(state, { ...neutralInput(), brake: 1 }, true);
+    state.forces.forward=-5;audio.update(state, { ...neutralInput(), brake: 1 }, true);
     check(reverseCoast > idleHum && audio.diagnostics().loops.flight > reverseCoast, 'Reverse speed and reverse thrust raise the engine hum above idle');
-    state.speed = 4; audio.update(state, { ...neutralInput(), brake: 1 }, true);
-    check(audio.diagnostics().loops.flight === reverseCoast, 'Forward braking adds no reverse thrust sound');
-    state.speed = 0;
+    setVelocity(state,4);state.forces.forward=-42;audio.update(state, { ...neutralInput(), brake: 1 }, true);
+    check(audio.diagnostics().loops.flight > reverseCoast, 'Forward braking powers front thrusters and their engine hum');
+    setVelocity(state,0);
     state.resources.laserActive = true; state.elapsed += .1; audio.update(state, { ...input, mine: true }, true);
     check(audio.diagnostics().loops.laser > 0, 'An active mining laser enables its loop');
     state.resources.cargo.ferrite++; state.elapsed += .1; audio.update(state, input, true);

@@ -31,7 +31,7 @@
 .touch-unload > span { display: block; font-size: 22px; line-height: 1; margin-bottom: 5px; }
 .touch-unload small { font-size: 6px; }
 .touch-unload:disabled { opacity: .35; cursor: default; }
-.touch-reverse {
+.touch-brake {
   position: absolute; left: calc(max(22px, env(safe-area-inset-left)) + var(--stick-size) + 12px);
   bottom: max(28px, calc(env(safe-area-inset-bottom) + 12px));
   width: 66px; height: 56px; padding: 6px 3px;
@@ -39,9 +39,16 @@
   background: #173029a8; color: #e7f4ea; pointer-events: auto; touch-action: none;
   -webkit-tap-highlight-color: transparent;
 }
-.touch-reverse > span { display: block; font-size: 23px; line-height: 1; margin-bottom: 5px; }
-.touch-reverse small { font-size: 6px; letter-spacing: .4px; }
-.touch-reverse.is-active { background: #c8e8db77; border-color: #e9ffee; color: #fff; }
+.touch-brake > span { display: block; font-size: 23px; line-height: 1; margin-bottom: 5px; }
+.touch-brake small { font-size: 6px; letter-spacing: .4px; }
+.touch-brake.is-active { background: #c8e8db77; border-color: #e9ffee; color: #fff; }
+.touch-pedal { position:absolute; width:56px; height:52px; padding:5px 2px; border:1px solid #d9f4e776; border-radius:12px; background:#173029b8; color:#e7f4ea; pointer-events:auto; touch-action:none; -webkit-tap-highlight-color:transparent; }
+.touch-pedal > span { display:block; font-size:22px; line-height:1; margin-bottom:5px; }
+.touch-pedal small { font-size:6px; letter-spacing:.3px; }
+.touch-pedal.is-active { background:#426954e6; border-color:#e9ffee; }
+.touch-gas.is-latched { background:#b8ebccd9; color:#102b20; box-shadow:0 0 16px #b5f1d933; }
+.touch-gas { left:calc(max(22px,env(safe-area-inset-left)) + var(--stick-size) + 12px); bottom:max(90px,calc(env(safe-area-inset-bottom) + 74px)); }
+.touch-handbrake { left:calc(max(22px,env(safe-area-inset-left)) + var(--stick-size) + 74px); bottom:max(90px,calc(env(safe-area-inset-bottom) + 74px)); }
 body[data-controls=touch] { --edge: max(12px, env(safe-area-inset-left), env(safe-area-inset-right)); --touch-bottom: max(28px, calc(env(safe-area-inset-bottom) + 12px)); }
 body[data-controls=touch] footer { display: none; }
 body[data-controls=touch] .topbar { top: env(safe-area-inset-top); }
@@ -50,9 +57,12 @@ body[data-controls=touch] .telemetry, body[data-controls=touch] .navigation { bo
 body[data-controls=touch] .interaction { bottom: calc(var(--touch-bottom) + 146px); }
 body[data-controls=touch] #shelter-guide { bottom: calc(var(--touch-bottom) + 356px); }
 @media (orientation: portrait) {
-  .touch-reverse {
+  .touch-gas, .touch-handbrake { bottom:calc(max(28px,env(safe-area-inset-bottom) + 12px) + var(--stick-size) + 30px); }
+  .touch-gas { left:max(22px,env(safe-area-inset-left)); }
+  .touch-handbrake { left:calc(max(22px,env(safe-area-inset-left)) + 62px); }
+  .touch-brake {
     left: auto;
-    right: calc(max(22px, env(safe-area-inset-right)) + (var(--stick-size) - 66px) / 2);
+    right: calc(max(22px, env(safe-area-inset-right)) + (var(--stick-size) - 56px) / 2);
     bottom: calc(max(28px, env(safe-area-inset-bottom) + 12px) + var(--stick-size) + 30px);
   }
   body[data-controls=touch] .telemetry, body[data-controls=touch] .navigation { bottom: calc(var(--touch-bottom) + 270px); }
@@ -83,19 +93,26 @@ body[data-controls=touch] #shelter-guide { bottom: calc(var(--touch-bottom) + 35
 @media (max-width: 370px) {
   .touch-controls { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
   .touch-unload { min-width: 56px; margin-left: 4px; margin-right: 4px; }
-  .touch-reverse { left: calc(max(16px, env(safe-area-inset-left)) + var(--stick-size) + 10px); }
+  .touch-brake { left: calc(max(16px, env(safe-area-inset-left)) + var(--stick-size) + 10px); }
   body[data-controls=touch] .mission { width: 145px; }
   body[data-controls=touch] .weather { width: 139px; }
 }
 @media (max-width: 370px) and (orientation: portrait) {
-  .touch-reverse { left: auto; right: calc(max(16px, env(safe-area-inset-right)) + (var(--stick-size) - 66px) / 2); }
+  .touch-gas { left:max(16px,env(safe-area-inset-left)); }
+  .touch-handbrake { left:calc(max(16px,env(safe-area-inset-left)) + 62px); }
+  .touch-brake { left: auto; right: calc(max(16px, env(safe-area-inset-right)) + (var(--stick-size) - 56px) / 2); }
 }
 /* Short displays keep radar and status above the pads, leaving the centre clear. */
 @media (max-height: 650px) and (orientation: portrait) {
   body[data-controls=touch] .mission h1, body[data-controls=touch] .mission .eyebrow { display: none; }
   body[data-controls=touch] .weather p { display: none; }
-  body[data-controls=touch] .telemetry, body[data-controls=touch] .navigation { bottom: calc(var(--touch-bottom) + 258px); }
-  body[data-controls=touch] #shelter-guide { bottom: auto; top: calc(env(safe-area-inset-top) + 181px); }
+  body[data-controls=touch] .telemetry, body[data-controls=touch] .navigation { bottom: calc(var(--touch-bottom) + 246px); }
+  body[data-controls=touch] .interaction { bottom: calc(var(--touch-bottom) + 190px); }
+  body[data-controls=touch] #shelter-guide { bottom:auto; top:calc(env(safe-area-inset-top) + 174px); left:var(--edge); right:var(--edge); max-width:none; transform:none; padding:2px 6px; gap:6px; height:18px; line-height:12px; }
+  body[data-controls=touch] #shelter-guide > div { display:flex; align-items:center; gap:8px; }
+  body[data-controls=touch] #guide-arrow { font-size:12px; }
+  body[data-controls=touch] #shelter-guide strong { font-size:6px; letter-spacing:.4px; }
+  body[data-controls=touch] #shelter-guide small { font-size:6px; margin-top:0; }
 }
 @media (orientation: landscape) and (max-height: 600px) {
   .touch-controls { --stick-size: 108px; padding-bottom: max(24px, calc(env(safe-area-inset-bottom) + 12px)); }
@@ -123,8 +140,11 @@ body[data-controls=touch] #shelter-guide { bottom: calc(var(--touch-bottom) + 35
   body[data-controls=touch] .speed-line > span { font-size: 6px; }
   body[data-controls=touch] .hull { margin: 4px 0; font-size: 6px; }
   body[data-controls=touch] #safety { font-size: 5px; margin-top: 4px; padding-top: 4px; letter-spacing: .2px; }
-  body[data-controls=touch] .interaction { bottom: calc(var(--touch-bottom) + 64px); width: min(340px, calc(100% - 300px)); padding: 7px 9px; }
+  body[data-controls=touch] .interaction { bottom: calc(var(--touch-bottom) + 74px); left:calc(var(--edge) + 256px); right:calc(var(--edge) + 120px); width:auto; transform:none; padding:7px 9px; }
+  .touch-unload { position:absolute; right:calc(max(22px,env(safe-area-inset-right)) + var(--stick-size) + 12px); bottom:max(28px,calc(env(safe-area-inset-bottom) + 12px)); margin:0; }
   body[data-controls=touch] .interaction p { font-size: 8px; margin: 5px 0; }
   body[data-controls=touch] .interaction-top { font-size: 7px; }
-  body[data-controls=touch] #shelter-guide { bottom: calc(var(--touch-bottom) + 134px); padding: 5px 8px; }
+  body[data-controls=touch] #shelter-guide { top:calc(env(safe-area-inset-top) + 5px); bottom:auto; left:calc(var(--edge) + 220px); right:calc(var(--edge) + 76px); max-width:none; transform:none; padding:3px 7px; gap:6px; }
+  body[data-controls=touch] #shelter-guide strong { font-size:6px; letter-spacing:.5px; }
+  body[data-controls=touch] #shelter-guide small { font-size:7px; margin-top:2px; }
 }

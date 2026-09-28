@@ -322,6 +322,16 @@ def speeder():
             box("Vent fin", (x - side * .62, .01, z), (.035, .23, .032), m["steel"], root, .005)
         fasteners([(x + side * .30, .527, z) for z in (-1.22, .34, 1.6)], m["graphite"], root)
         empty("exhaust_left" if side == -1 else "exhaust_right", (x, 0, 3.62), root)
+        suffix = "left" if side == -1 else "right"
+        empty(f"reverse_{suffix}", (x, -.01, -3.20), root)
+        for end, z in (("front", -1.6), ("aft", 1.6)):
+            cylinder(f"Lateral turbine ring {suffix} {end}", (side * 2.94, .04, z), .17, .10,
+                     m["steel"], root, axis="x", sides=16, bevel=.012)
+            cylinder(f"Lateral turbine well {suffix} {end}", (side * 3.001, .04, z), .126, .025,
+                     m["rubber"], root, axis="x", sides=16, bevel=.005)
+            cylinder(f"Lateral turbine core {suffix} {end}", (side * 3.019, .04, z), .077, .013,
+                     m["mint"], root, axis="x", sides=16, bevel=.003)
+            empty(f"side_{suffix}_{end}", (side * 3.035, .04, z), root)
 
     # Cargo cassette and mechanical plumbing aft of the turret.
     loft("Cargo cassette underframe", [(1.43, .77, .48, .85), (2.80, .65, .34, .69)], m["graphite"], root)
