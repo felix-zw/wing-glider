@@ -104,9 +104,10 @@ test('death stops simulation and a restart is independent', () => {
   const s = createState(); s.phase = 'storm';
   advance(s, neutralInput(), 11); assert.equal(s.dead, true); assert.equal(s.health, 0);
   const elapsed = s.elapsed; advance(s, { ...neutralInput(), thrust: 1 }, 10); assert.equal(s.elapsed, elapsed);
-  const { resources, mission, environment, levelId, impactCooldown, lastDamage, surfacePose, ...flight } = createState();
+  const { resources, mission, environment, levelId, impactCooldown, lastDamage, surfacePose, deployment, ...flight } = createState();
   assert.equal(levelId, 'aster'); assert.equal(environment.kind, 'planet'); assert.equal(impactCooldown, 0); assert.equal(lastDamage, null);
   assert.equal(surfacePose, null);
+  assert.equal(deployment, null);
   assert.deepEqual(flight, { ...motionState(), x: 25, z: 36, heading: 0, turret: 0, speed: 0, health: 100, phase: 'calm', phaseTime: 0, elapsed: 0, storms: 0, distance: 0, dead: false });
   assert.equal(resources.fragments.length, 0); assert.equal(mission.completed, false);
 });

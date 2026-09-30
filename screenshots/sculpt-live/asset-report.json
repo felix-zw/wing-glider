@@ -1,0 +1,47 @@
+{
+  "date": "2026-09-29T18:07:59.852Z",
+  "shapes": [
+    {
+      "name": "Bruchplatte",
+      "shape": "slab",
+      "highTriangles": 8388,
+      "standardTriangles": 3432,
+      "contours": 1,
+      "coldCompileMs": 92.31469999999999
+    },
+    {
+      "name": "Angeschnittener Körper",
+      "shape": "split",
+      "highTriangles": 10140,
+      "standardTriangles": 3900,
+      "contours": 1,
+      "coldCompileMs": 112.8759
+    },
+    {
+      "name": "Länglicher Splitter",
+      "shape": "long",
+      "highTriangles": 6708,
+      "standardTriangles": 2640,
+      "contours": 1,
+      "coldCompileMs": 67.625
+    },
+    {
+      "name": "Quaderähnlicher Brocken",
+      "shape": "block",
+      "highTriangles": 11552,
+      "standardTriangles": 4376,
+      "contours": 1,
+      "coldCompileMs": 79.14780000000002
+    },
+    {
+      "name": "Felsmasse",
+      "shape": "mass",
+      "highTriangles": 12464,
+      "standardTriangles": 5024,
+      "contours": 1,
+      "coldCompileMs": 86.89640000000009
+    }
+  ],
+  "stoneTextureBytes": 4062117,
+  "publicAssetBytes": 11914772
+}

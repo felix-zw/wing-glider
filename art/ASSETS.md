@@ -24,9 +24,9 @@ All coordinates below are **game/glTF meters**, with **+Y up and -Z forward**. L
 | Asset | Size (X × Y × Z) | Meshes / material draw calls | Triangles |
 | --- | --- | --- | --- |
 | `public/assets/models/speeder.glb` | 6.051 × 1.691 × 7.915 m | 14 | 25,924 |
-| `public/assets/models/atlas.glb` | 10.65 × 6.37 × 20.43 m | 10 | 23,424 |
+| `public/assets/models/atlas.glb` | 21.10 × 11.77 × 24.63 m (folded ramp, studio gear pose) | 53 | 36,396 |
 
-The speeder origin is the center of its structural keel. Its lowest surface is Y=-0.46 m, so place it above the terrain by the desired hover height plus at least 0.46 m. ATLAS has ground-level origin and its lowest foot pad is Y=0.03 m. ATLAS bounds include its deployed aft ramp, service platform and ground cargo case. These are visual meshes; gameplay should use the level's simplified collider rather than all triangles.
+The speeder origin is the center of its structural keel. Its lowest surface is Y=-0.46 m, so place it above the terrain by the desired hover height plus at least 0.46 m. ATLAS v2 uses the hangar floor as Y=0; its articulated feet extend below it. The manifest measures the exported rest pose, not every animated configuration. Runtime ground placement comes from `atlas-rig.ts`, including the complete body envelope, tilted foot soles and deployed ramp. These are visual meshes; flight continues to use the level's simplified rock colliders.
 
 ### Speeder attachments
 
@@ -45,9 +45,16 @@ The speeder origin is the center of its structural keel. Its lowest surface is Y
 
 | Node | Local position (X,Y,Z) | Use |
 | --- | --- | --- |
-| `loading_socket` | (0, 0.22, 11.30) | Ground end of the aft loading ramp. |
-| `worklight_left` | (-4.14, 4.88, 4.67) | Optional downward-facing task light. |
-| `worklight_right` | (4.14, 4.88, 4.67) | Optional downward-facing task light. |
+| `loading_socket` | (0, 0, 5), child of `ramp_section_3` | Moving end of the telescopic loading ramp. |
+| `bay_socket` / `exit_socket` | (0, 1.35, 1) / (0, 1.35, 10) | Speeder parking position / exit direction along +Z. |
+| `hangar_door` | (0, 0, 10.12) | Translates upward 5.1 m to clear the bay. |
+| `ramp_hinge` | (0, 0, 10.4) | Rotates around X; four nested 5 m sections extend along +Z. |
+| `hip_*`, `upper_*`, `knee_*`, `lower_*`, `piston_*`, `foot_*` | Root-local rig transforms | Four independent legs: `left_front`, `left_aft`, `right_front`, `right_aft`. Link meshes have unit length along +Y; soles use YXZ pitch/roll. |
+| `lift_*` | (±6.65, -0.62, ±5.5) | Four downward landing jets. |
+| `cruise_left/right`, `brake_left/right` | See manifest | Aft propulsion and forward braking exhaust. |
+| `worklight_left/right` | (±4.4, 5.3, 10.4) | Portal light attachments. |
+
+The ATLAS-specific authoring code is `tools/art/atlas_model.py`, invoked by the existing `art:models -- atlas` command. The bay has an actual floor, walls, ceiling and moving door, with no solid mesh across its interior. Deck crates sit outside the vehicle corridor. The four sections form a telescopic ramp; the local socket-parent map is included in the manifest. See [ATLAS-DEPLOYMENT.md](ATLAS-DEPLOYMENT.md) for runtime placement, animation and verification.
 
 All meshes use glTF metallic/roughness materials with controlled emissive mint and amber surfaces. The assets do not require textures; panel breaks, small fasteners, vents and lettering are merged geometry. There are no transparency sorting or external image dependencies. Mesh/material names are descriptive; only the attachment names above are a runtime contract. The adjacent JSON manifests contain measured bounds and mesh statistics and are checked against Three.js loading by `validate_assets.mjs`.
 
@@ -89,8 +96,8 @@ Stratified cliff rings, irregular asteroid bodies and scattered rubble are gener
 
 These surfaces are original procedural artwork, not Blender imports or downloaded rock packs. They reuse the compressed maps above without extra texture downloads. Large formations and ores use the same polygon footprints as collision and navigation at their interaction plane; distant debris and small instanced stones are visual detail. The full world is reproducible from its level definitions and seeds.
 
-Asteroids now use `src/asteroid-rock.ts`: irregular triangulated shoulders, off-center depressions, tapered upper/lower outlines and 19–24 partly embedded angular crag blocks per body. The blocks are merged into each body's mesh. A dark, mostly matte stone shader adds broad mineral variation and fine interrupted angular fissures. There are no latitude rings. The exact polygon is preserved through the -1 to 7.4 m interaction band, keeping ores and collision aligned. Contact raycasts, closed surfaces, containment and the original 10,000-triangle limit are tested for every large asteroid.
+## Editable asteroids and shared basalt
 
-`src/vehicle-pose.ts` uses the speeder's full underside envelope for terrain clearance. Its projected turret basis and GLB pivot/socket coordinates preserve the aiming bearing while the hull tilts. The 4.5 m collision radius covers the real asset's measured 4.437 m maximum horizontal hull radius. Local audio is procedural Web Audio in `src/audio.ts`; there are no additional audio files, codecs or licensing dependencies. See [FLIGHT-AUDIO-ASTEROIDS.md](FLIGHT-AUDIO-ASTEROIDS.md) for current verification.
+Asteroids are level-owned density volumes in `src/sculpt.ts`. There is no asteroid GLB or Blender export pipeline. See [LEVEL-EDITOR.md](LEVEL-EDITOR.md).
 
-Visual review and target-hardware measurement use `/tests/visual.html` on the Vite development server. The fixture provides fixed Aster, ridge/canyon, storm, asteroid-mining, vehicle, cliff-ore, depleted-ore and asteroid-crystal views plus timed performance runs. The latest captures and measured results are in [TERRAIN-INTEGRATION.md](TERRAIN-INTEGRATION.md). Studio renders and passing builds do not prove the target of 60 FPS at 1080p; that target must be assessed with the browser/GPU benchmark results.
+The original material source is `surfaces/stone-fracture-source.png`, created with the built-in Imagegen tool. Its prompt and provenance are in [STONE-MATERIAL.md](STONE-MATERIAL.md). `tools/generate-stone.py` bakes deterministic 1024² colour, normal and packed occlusion/roughness/height maps from that source. Height and roughness are artistic estimates, not measured photogrammetry. `node tools/encode-stone.mjs` creates the three shared mipmapped KTX2 files. Host rock, fresh breaks and weathering use the same maps with locally painted blends. Vertex displacement and the shadow pass share the height function; tiny material relief does not change flight collision.

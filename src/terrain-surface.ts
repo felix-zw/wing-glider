@@ -76,7 +76,8 @@ vec3 landBump(vec3 position, vec3 n, float height) {
 /** Albedo, relief and roughness use the same geological masks. The heightfield
  * itself stays authoritative for flight, shelter boundaries and ore anchors. */
 export function createTerrain(world: LevelWorld, assets: AssetLibrary) {
-  const geometry = new THREE.PlaneGeometry(480, 480, 320, 320); geometry.rotateX(-Math.PI / 2);
+  const extent=world.bounds*2+60;
+  const geometry = new THREE.PlaneGeometry(extent, extent, 320, 320); geometry.rotateX(-Math.PI / 2);
   const positions = geometry.attributes.position, geology: number[] = [], mineralWeather: number[] = [];
   for (let i = 0; i < positions.count; i++) {
     const x = positions.getX(i), z = positions.getZ(i), field = groundGeology(world, x, z);

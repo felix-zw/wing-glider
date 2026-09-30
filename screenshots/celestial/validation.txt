@@ -1,0 +1,9 @@
+30.09.2026
+Production build passed (TypeScript + Vite).
+130 unit tests passed, zero failures.
+{"celestial":35,"sky":43,"lighting":35}
+1080p frame and GPU-memory samples: checks.txt.
+Final browser checks: final-checks.txt.
+Spatial regression: sky-regression.txt.
+Lighting regression: lighting-regression.txt.
+Real mouse rotation and undo: mouse-checks.txt.

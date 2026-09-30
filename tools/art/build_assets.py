@@ -381,101 +381,9 @@ def crate(name, center, dimensions, m, parent, orange=True):
 
 
 def atlas():
-    reset()
-    m = palette()
-    root = empty("atlas")
-    root["asset_version"] = 1
-    root["forward"] = "-Z"
-    root["description"] = "ATLAS-07 | Expedition cargo tender"
-    loft("ATLAS structural hull", [(-9.2, 1.0, 1.1, 2.3), (-7.1, 3.25, .85, 2.7),
-         (-2.4, 3.35, .9, 2.55), (5.7, 3.22, .9, 2.48), (7.7, 2.65, 1.15, 2.42)], m["graphite"], root, bevel=.14)
-    # Armored side sponsons make a frame around the sunken orange cargo deck.
-    for side in (-1, 1):
-        x = side * 2.95
-        for z1, z2, top in ((-6.6, -2.6, 4.1), (-2.5, 1.75, 3.5), (1.85, 5.65, 3.5)):
-            loft("ATLAS segmented side armor", [(z1, .60, 1.1, top), (z2, .60, 1.1, top - .24)],
-                 m["ivory"], root, x=x, bevel=.075)
-            box("ATLAS side armor inset", (x, top - .09, (z1 + z2) / 2), (.72, .05, (z2 - z1) * .69), m["chalk"], root, .04)
-        loft("ATLAS front shoulder", [(-8.75, .28, 1.35, 2.7), (-6.72, .60, 1.1, 4.1)], m["ivory"], root, x=x * .81, bevel=.07)
-        box("ATLAS side orange warning panel", (side * 3.572, 2.6, -1.15), (.075, .68, 1.7), m["orange"], root, .025)
-        for z in (-4.3, -3.9, -3.5, -3.1):
-            box("ATLAS side cooling recess", (side * 3.575, 2.3, z), (.10, .9, .18), m["rubber"], root, .035)
-            box("ATLAS side cooling fin", (side * 3.64, 2.3, z), (.035, .75, .05), m["steel"], root, .006)
-        beam("ATLAS external handrail", (side * 3.4, 3.66, -.85), (side * 3.4, 3.37, 5.0), .075, m["steel"], root)
-        for z in (-.85, 2.2, 5.0):
-            beam("ATLAS handrail stand", (side * 3.4, 3.35 - (z + 1) * .035, z), (side * 3.4, 3.62 - (z + 1) * .035, z), .07, m["steel"], root)
-        # Four landing outriggers with hydraulic knees and broad pads.
-        for z in (-5.0, 4.55):
-            beam("Landing hydraulic upper", (side * 2.8, 1.45, z), (side * 4.35, .75, z + .3), .34, m["graphite"], root)
-            beam("Landing hydraulic piston", (side * 3.05, 1.8, z), (side * 4.39, .87, z + .3), .13, m["steel"], root)
-            cylinder("Landing pivot", (side * 3.1, 1.65, z), .30, .42, m["orange"], root, axis="x", sides=16)
-            box("Landing strut knee", (side * 4.30, .65, z + .30), (.43, .8, .47), m["ivory"], root, .075)
-            box("Broad landing pad", (side * 4.48, .18, z + .33), (1.3, .30, 1.65), m["graphite"], root, .11)
-            box("Landing pad plate", (side * 4.48, .36, z + .33), (.94, .10, 1.32), m["steel"], root, .04)
-        # Enclosed aft thrusters and compact cyan cores.
-        cylinder("ATLAS engine mounting", (side * 2.65, 1.95, 6.6), .75, 2.2, m["ivory"], root, axis="z", sides=16, bevel=.05, radius2=.60)
-        cylinder("ATLAS engine nozzle", (side * 2.65, 1.95, 7.72), .62, .55, m["graphite"], root, axis="z", sides=16, bevel=.03, radius2=.49)
-        cylinder("ATLAS engine glow", (side * 2.65, 1.95, 8.005), .35, .04, m["mint"], root, axis="z", sides=16)
-
-    loft("ATLAS bridge ceramic shell", [(-8.85, .90, 1.9, 2.85), (-7.0, 2.45, 2.4, 4.35),
-         (-4.9, 2.42, 2.5, 4.66), (-3.55, 2.1, 2.5, 4.36)], m["ivory"], root, bevel=.11)
-    loft("ATLAS panoramic bridge gasket", [(-7.2, 1.81, 3.34, 4.04), (-5.18, 1.92, 3.50, 4.76),
-         (-4.76, 1.81, 3.51, 4.68)], m["graphite"], root, bevel=.055)
-    loft("ATLAS panoramic bridge glass", [(-7.075, 1.70, 3.40, 4.035), (-5.21, 1.80, 3.59, 4.76),
-         (-4.88, 1.70, 3.6, 4.67)], m["glass"], root, bevel=.045)
-    for x in (-.8, 0, .8):
-        beam("ATLAS windshield mullion", (x, 4.05, -7.08), (x, 4.785, -5.2), .065, m["steel"], root)
-    box("ATLAS bridge roof service panel", (0, 4.64, -4.18), (2.45, .13, .83), m["chalk"], root, .06)
-    label("ATLAS name", "ATLAS", (0, 4.725, -3.87), .47, m["graphite"], root)
-    label("ATLAS registry", "07 / EXPEDITION", (0, 2.894, -8.69), .18, m["graphite"], root)
-    box("Bow worklight housing", (0, 2.2, -8.9), (1.07, .34, .15), m["graphite"], root)
-    box("Bow worklight", (0, 2.2, -8.992), (.85, .14, .03), m["amber"], root, .016)
-
-    # The center deck and individual strapped crates are visible from overhead.
-    box("Cargo deck", (0, 2.66, 1.4), (4.6, .34, 7.85), m["graphite"], root, .12)
-    for z in (-1.7, .9, 3.5):
-        crate("Orange cargo cassette", (0, 3.32, z), (3.8, 1.13, 2.13), m, root)
-    for side in (-1, 1):
-        for z in (-2.85, -.3, 2.25, 4.75):
-            box("Cargo deck retaining shoe", (side * 2.11, 2.97, z), (.34, .48, .4), m["steel"], root, .04)
-    box("Aft cargo door surround", (0, 1.93, 7.52), (3.3, 2.1, .28), m["ivory"], root, .10)
-    box("Aft open cargo door", (0, 1.84, 7.695), (2.58, 1.56, .07), m["rubber"], root, .025)
-    box("Aft cargo doorway light", (0, 2.665, 7.75), (2.5, .12, .06), m["mint"], root, .015)
-    for side in (-1, 1):
-        box("Aft doorway side light", (side * 1.32, 1.94, 7.75), (.055, 1.32, .05), m["mint"], root, .009)
-    # A usable ramp slopes to the ground. Its treads and safety edges read at scale.
-    panel("Cargo loading ramp", [(-1.42, 1.08, 7.48), (1.42, 1.08, 7.48),
-          (1.75, .22, 11.23), (-1.75, .22, 11.23)], .17, m["steel"], root, .045)
-    for side in (-1, 1):
-        beam("Ramp outer rail", (side * 1.43, 1.20, 7.51), (side * 1.72, .36, 11.18), .10, m["ivory"], root)
-        beam("Ramp cyan guide", (side * 1.24, 1.115, 7.66), (side * 1.47, .295, 11.02), .048, m["mint"], root)
-    for i in range(14):
-        t = i / 13
-        z = 7.7 + t * 3.25
-        y = 1.08 - (z - 7.48) / 3.75 * .86 + .034
-        box("Ramp non-slip tread", (0, y, z), (2.5 + t * .38, .055, .07), m["graphite"], root, .008)
-    empty("loading_socket", (0, .22, 11.30), root)
-
-    # Attached service platform, utility crates, aerial and articulated task lights.
-    box("Starboard service platform", (4.22, 1.20, 1.82), (1.78, .25, 4.8), m["graphite"], root, .05)
-    for z in (-.25, 3.94):
-        beam("Platform orange edge", (3.4, 1.36, z), (5.04, 1.36, z), .08, m["orange"], root)
-    for z in (-.1, .35, .8, 1.25, 1.7, 2.15, 2.6, 3.05, 3.5):
-        box("Platform slat", (4.22, 1.35, z), (1.59, .07, .13), m["steel"], root, .012)
-    crate("Deck utility case", (4.18, 1.87, 3.0), (1.17, .89, 1.08), m, root, orange=False)
-    crate("Ground cargo case", (-4.62, .66, 7.88), (1.8, 1.12, 1.8), m, root)
-    for side in (-1, 1):
-        beam("ATLAS worklamp mast", (side * 3.11, 3.6, 4.62), (side * 3.35, 5.10, 4.62), .11, m["steel"], root)
-        beam("ATLAS worklamp arm", (side * 3.35, 5.10, 4.62), (side * 4.15, 5.10, 4.62), .11, m["graphite"], root)
-        box("ATLAS task light housing", (side * 4.14, 5.08, 4.66), (.55, .25, .48), m["graphite"], root)
-        box("ATLAS task light", (side * 4.14, 4.941, 4.67), (.38, .025, .29), m["amber"], root, .016)
-        empty("worklight_left" if side == -1 else "worklight_right", (side * 4.14, 4.88, 4.67), root)
-    cylinder("ATLAS antenna mount", (1.69, 4.26, -3.6), .26, .32, m["orange"], root)
-    beam("ATLAS communications aerial", (1.69, 4.35, -3.6), (1.69, 6.30, -3.6), .075, m["steel"], root)
-    beam("ATLAS aerial crosspiece", (1.2, 5.94, -3.6), (2.2, 5.94, -3.6), .07, m["graphite"], root)
-    cylinder("ATLAS aerial locator", (1.69, 6.34, -3.6), .09, .12, m["mint"], root, sides=12)
-    fasteners([(side * 2.89, 4.135, z) for side in (-1, 1) for z in (-6.3, -5.8)], m["graphite"], root, .07)
-    export_asset("atlas", root, 25.4, (20, 27, -28))
+    sys.path.insert(0, str(Path(__file__).parent))
+    from atlas_model import build_atlas
+    build_atlas()
 
 
 def merge_by_material(root):
@@ -512,7 +420,8 @@ def export_asset(name, root, camera_scale, camera_position):
         "triangle_count": sum(sum(len(poly.vertices) - 2 for poly in obj.data.polygons) for obj in meshes),
         "sockets": {obj.name: [round(n, 4) for n in (obj.location.x, obj.location.z, -obj.location.y)]
                     for obj in root.children_recursive if obj.type == "EMPTY"},
-        "socket_positions_are": "local to parent; laser_socket is relative to mining_turret",
+        "socket_parents": {obj.name: obj.parent.name for obj in root.children_recursive if obj.type == "EMPTY"},
+        "socket_positions_are": "local to the named socket_parents entry",
     }
     (OUTPUT / f"{name}.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf8")
     for obj in [root] + list(root.children_recursive):

@@ -1,11 +1,18 @@
 import * as THREE from 'three';
-import { AssetLibrary } from './assets';
-import { CONFIG, SPACE, TRANSPORTER } from './config';
+import { atlasReserved } from './atlas-rig';
+import { AssetLibrary,disposeObject } from './assets';
+import { SPACE } from './config';
 import { contains } from './collision';
 import { groundHeight, bedrockDatum, getSolidFootprint, seededRandom, type LevelWorld, type Solid } from './levels';
 import type { Quality } from './render-pipeline';
 import { createTerrain, groundGeology } from './terrain-surface';
-import { createAsteroidGeometry, createAsteroidMaterial } from './asteroid-rock';
+import { ASTEROIDS } from './asset-catalog';
+import {getSculpt,sculptGeometry,registeredSculptKey,sculptKey} from './sculpt-runtime';
+import {THEMES} from './themes';
+import {DOCUMENTS} from './level-document';
+import {previewSculpt,type SculptDefinition} from './sculpt';
+import type {LevelDocument} from './level-document';
+const DEFAULT_STONE:SculptDefinition={version:2,id:'shipped-stone',name:'Stein',shape:'round',seed:0,strokes:[],material:{scale:1,angularity:.55,relief:.55,weathering:.35}};
 
 export function irregularRock(seed: number, detail = 1) {
   const geometry = new THREE.IcosahedronGeometry(1, detail);
@@ -21,11 +28,20 @@ export function irregularRock(seed: number, detail = 1) {
   return geometry;
 }
 
-/** A watertight low belt retains the authoritative collider/ore plane. Above it,
- * fractured strata, roofs and embedded rock plates are merged into one draw. */
-function formation(world: LevelWorld, solid: Solid, assets: AssetLibrary) {
+/** Sculpted bodies use their shared surface revision; planet cliffs retain the
+ * terrain-connected procedural formation. */
+function formation(world: LevelWorld, solid: Solid, assets: AssetLibrary,sourceOverride?:SculptDefinition,quality:Quality='high') {
   if (solid.kind === 'asteroid') {
-    const mesh = new THREE.Mesh(createAsteroidGeometry(solid), createAsteroidMaterial(assets.surfaces.get('rock')!));
+    const asset=ASTEROIDS[solid.assetId!];
+    const sculpt=getSculpt(world.definition.id,solid.id)!;
+    const doc=DOCUMENTS.get(world.definition.id),source=sourceOverride??doc?.sculpts?.[String(doc.objects.find(o=>o.id===solid.id)?.parameters.sculptId)];
+    const mesh = new THREE.Mesh(sculptGeometry(sculpt?.[quality]??previewSculpt(source!)),assets.sculptMaterial(world.theme.rockTint,source??DEFAULT_STONE,quality));
+    if(sculpt&&source)mesh.userData.sculpt={compiled:sculpt,source};
+    mesh.customDepthMaterial=assets.sculptDepth(source??DEFAULT_STONE,quality);mesh.userData.skin=JSON.stringify([source?.material,source?.glow,world.theme.rockTint,quality]);mesh.userData.pending=!sculpt;
+    mesh.onBeforeRender=(_renderer,_scene,camera)=>{const shader=(mesh.material as THREE.Material).userData.shader;
+      if(shader?.uniforms.sculptCameraLocal)shader.uniforms.sculptCameraLocal.value.copy(camera.position).applyMatrix4(mesh.matrixWorld.clone().invert());};
+    mesh.position.set(solid.x,2.4,solid.z);mesh.rotation.y=-(solid.rotation??0);mesh.scale.setScalar(solid.scale??1);
+    mesh.userData.asteroidAsset=asset;
     mesh.castShadow = mesh.receiveShadow = true; mesh.userData.structure = solid;
     return mesh;
   }
@@ -48,8 +64,9 @@ function formation(world: LevelWorld, solid: Solid, assets: AssetLibrary) {
   const seamTint = new THREE.Color(space ? '#657784' : '#9d947e');
   const roof = (x: number, z: number) => {
     if (solid.kind !== 'cliff') return 0;
-    const along = (solid.halfX < solid.halfZ ? z / solid.halfZ : x / solid.halfX);
-    const across = (solid.halfX < solid.halfZ ? x / solid.halfX : z / solid.halfZ);
+    const c=Math.cos(solid.rotation??0),n=Math.sin(solid.rotation??0),lx=x*c+z*n,lz=-x*n+z*c;
+    const along = (solid.halfX < solid.halfZ ? lz / solid.halfZ : lx / solid.halfX);
+    const across = (solid.halfX < solid.halfZ ? lx / solid.halfX : lz / solid.halfZ);
     const end = .60 + .40 * Math.sqrt(Math.max(0, 1 - along * along));
     const peaks = .69 + .22 * Math.abs(Math.sin(along * 5.2 + seed)) + .09 * Math.cos(along * 12 + seed);
     const cleft = Math.exp(-Math.pow((along - .24 * Math.sin(seed)) / .13, 2)) * solid.height * .105;
@@ -187,32 +204,53 @@ export class Landscape {
   readonly moving: THREE.InstancedMesh | null;
   private decorations: { mesh: THREE.InstancedMesh; count: number }[] = [];
   private shield: THREE.Mesh | null = null;
-  constructor(readonly world: LevelWorld, assets: AssetLibrary) {
+  private quality:Quality='high';
+  constructor(public world: LevelWorld, private assets: AssetLibrary) {
     const space = world.definition.environment === 'space';
     this.terrain = space ? null : createTerrain(world, assets);
+    if(this.terrain)(this.terrain.material as THREE.MeshStandardMaterial).color.multiply(new THREE.Color(world.theme.rockTint));
     if (this.terrain) { this.root.add(this.terrain); this.aimTargets.push(this.terrain); }
-    for (const solid of world.solids) { const mesh = formation(world, solid, assets); this.solids.push(mesh); this.root.add(mesh); this.aimTargets.push(mesh); }
+    for (const solid of world.solids) { const mesh = formation(world, solid, assets); if(solid.kind==='cliff')mesh.material.color.multiply(new THREE.Color(world.theme.rockTint));this.solids.push(mesh); this.root.add(mesh); this.aimTargets.push(mesh); }
     this.scatter(assets, space);
     if (!space) { this.weatheredGravel(assets); this.footScree(assets); }
     if (space) {
       this.stars();
-      const material = assets.material('rock', { color: '#a4aaa9', metalness: 0.25, roughness: 0.95 });
-      this.moving = new THREE.InstancedMesh(irregularRock(7, 2), material, SPACE.hazardCount);
+      const material = assets.sculptMaterial(world.theme.rockTint,DEFAULT_STONE,'standard');
+      this.moving = new THREE.InstancedMesh(assets.rubbleGeometry(), material, SPACE.hazardCount);
       this.moving.instanceMatrix.setUsage(THREE.DynamicDrawUsage); this.moving.frustumCulled = false; this.moving.castShadow = true; this.root.add(this.moving);
       const shield = new THREE.Mesh(new THREE.RingGeometry(SPACE.shieldRadius - 0.08, SPACE.shieldRadius, 128), new THREE.MeshBasicMaterial({ color: '#75bbe1', transparent: true, opacity: 0.45, side: THREE.DoubleSide, depthWrite: false }));
-      shield.rotation.x = -Math.PI / 2; shield.position.y = 0.2; this.root.add(shield); this.shield = shield;
+      shield.rotation.x = -Math.PI / 2; shield.position.set(world.base.x,.2,world.base.z); this.root.add(shield); this.shield = shield;
     } else { this.moving = null; this.shelters(); }
     this.border();
+  }
+  previewDraft(document:LevelDocument){
+    for(const mesh of [...this.solids])if(!document.objects.some(o=>o.id===mesh.userData.structure.id)){disposeObject(mesh);this.solids.splice(this.solids.indexOf(mesh),1);this.aimTargets.splice(this.aimTargets.indexOf(mesh),1);}
+    for(const object of document.objects){let mesh=this.solids.find(m=>m.userData.structure.id===object.id);
+      if(!mesh&&object.assetId==='sculpt-asteroid'){const solid:Solid={kind:'asteroid',id:object.id,x:object.x,z:object.z,rotation:object.rotation,scale:object.scale,radius:36* object.scale,height:72* object.scale};mesh=formation(this.world,solid,this.assets,document.sculpts![String(object.parameters.sculptId)],this.quality);this.solids.push(mesh);this.aimTargets.push(mesh);this.root.add(mesh);}
+      if(mesh&&object.assetId==='sculpt-asteroid'){const source=document.sculpts![String(object.parameters.sculptId)];if(mesh.userData.pending&&registeredSculptKey(document.id,object.id)===sculptKey(source,object.scale)){const compiled=getSculpt(document.id,object.id)!;mesh.geometry.dispose();mesh.geometry=sculptGeometry(compiled[this.quality]);mesh.userData.sculpt={compiled,source};mesh.userData.pending=false;}this.applySkin(mesh,source,THEMES[document.themeId]?.rockTint??this.world.theme.rockTint);if(mesh.userData.sculpt)mesh.userData.sculpt.source=source;mesh.position.set(object.x,2.4,object.z);mesh.rotation.y=-object.rotation;mesh.scale.setScalar(object.scale);mesh.updateMatrixWorld(true);}
+      else if(mesh){mesh.position.x=object.x;mesh.position.z=object.z;mesh.updateMatrixWorld(true);}
+    }
+  }
+  private applySkin(mesh:THREE.Mesh<THREE.BufferGeometry,THREE.MeshStandardMaterial>,source:SculptDefinition,tint:string){const skin=JSON.stringify([source.material,source.glow,tint,this.quality]);if(mesh.userData.skin===skin)return;mesh.material.dispose();mesh.customDepthMaterial?.dispose();const material=this.assets.sculptMaterial(tint,source,this.quality),depth=this.assets.sculptDepth(source,this.quality);mesh.traverse(o=>{if(o instanceof THREE.Mesh){o.material=material;o.customDepthMaterial=depth;}});mesh.userData.skin=skin;}
+  syncSpace(world:LevelWorld,document:LevelDocument,quality:Quality,preserveId?:string){
+    this.world=world;this.quality=quality;this.previewDraft(document);if(this.shield)this.shield.position.set(world.base.x,.2,world.base.z);
+    for(const solid of world.solids){const mesh=this.solids.find(m=>m.userData.structure.id===solid.id)!;if(solid.kind!=='asteroid')continue;
+      const source=document.sculpts![String(document.objects.find(o=>o.id===solid.id)!.parameters.sculptId)],compiled=getSculpt(document.id,solid.id)!;
+      if(mesh.userData.sculpt?.compiled[quality]!==compiled[quality]||mesh.userData.preview&&preserveId!==solid.id){if(preserveId!==solid.id){for(const child of [...mesh.children]){(child as THREE.Mesh).geometry?.dispose();child.removeFromParent();}mesh.geometry.dispose();mesh.geometry=sculptGeometry(compiled[quality]);delete mesh.userData.preview;}}
+      this.applySkin(mesh,source,world.theme.rockTint);
+      mesh.userData.sculpt={compiled,source};mesh.userData.structure=solid;mesh.userData.asteroidAsset=solid.query;mesh.userData.pending=false;
+    }
   }
   private scatter(assets: AssetLibrary, space: boolean) {
     const random = seededRandom(this.world.definition.seed + 17), dummy = new THREE.Object3D();
     for (let variant = 0; variant < 4; variant++) {
-      const count = space ? 110 : 420;
-      const material = assets.material('rock', { color: space ? '#435266' : '#bab49d', roughness: 1, metalness: 0.03 });
-      const mesh = new THREE.InstancedMesh(irregularRock(variant * 1.8 + 2, 1), material, count);
+      const count = Math.ceil((space ? 110 : 420)*this.world.theme.decorationDensity);
+      const material = space?assets.sculptMaterial(this.world.theme.rockTint,DEFAULT_STONE,'standard'):assets.material('rock', { color: '#bab49d', roughness: 1, metalness: 0.03 });
+      const mesh = new THREE.InstancedMesh(space?assets.rubbleGeometry():irregularRock(variant * 1.8 + 2, 1), material, count);
       let actual = 0;
       for (let tries = 0; actual < count && tries < count * 10; tries++) {
         const x = (random() - 0.5) * (space ? 700 : 470), z = (random() - 0.5) * (space ? 700 : 470);
+        if(atlasReserved(this.world,x,z))continue;
         if (!space && (this.world.shelters.some(s => Math.hypot(s.x - x, s.z - z) < s.radius + 4) || this.world.solids.some(s => contains(s, { x, z }, 0.5)) || this.world.deposits.some(d => Math.hypot(d.x - x, d.z - z) < 7))) continue;
         const size = space ? 0.7 + random() * 3 : 0.17 + Math.pow(random(), 2.4) * 1.45;
         dummy.position.set(x, space ? -32 - random() * 100 : groundHeight(this.world, x, z) + size * 0.18, z);
@@ -225,11 +263,12 @@ export class Landscape {
     const random = seededRandom(this.world.definition.seed + 819), dummy = new THREE.Object3D();
     const warm = new THREE.Color('#b7aa87'), cold = new THREE.Color('#777968');
     for (let variant = 0; variant < 2; variant++) {
-      const count = 3200, material = assets.material('rock', { roughness: 1, metalness: 0, normalScale: new THREE.Vector2(.25,.25) });
+      const count = Math.ceil(3200*this.world.theme.decorationDensity), material = assets.material('rock', { roughness: 1, metalness: 0, normalScale: new THREE.Vector2(.25,.25) });
       const mesh = new THREE.InstancedMesh(irregularRock(31 + variant, 0), material, count);
       let placed = 0;
       for (let attempt = 0; placed < count && attempt < count * 12; attempt++) {
         const x = (random()-.5)*430, z = (random()-.5)*430, geology = groundGeology(this.world,x,z);
+        if(atlasReserved(this.world,x,z))continue;
         if (geology.shelter > .5 || this.world.solids.some(s => contains(s,{x,z},.25))) continue;
         const h = groundHeight(this.world,x,z);
         const slope = Math.min(1,Math.hypot(groundHeight(this.world,x+.6,z)-h,groundHeight(this.world,x,z+.6)-h));
@@ -248,15 +287,16 @@ export class Landscape {
     const random = seededRandom(this.world.definition.seed + 3407), dummy = new THREE.Object3D(), up = new THREE.Vector3(0,1,0);
     const normal = new THREE.Vector3(), cliffs = this.world.solids.filter(s => s.kind === 'cliff');
     const material = assets.material('rock', { color:'#cbbda4', roughness:1, metalness:.025 });
-    const mesh = new THREE.InstancedMesh(irregularRock(18.7,1),material,cliffs.length*105);
+    const mesh = new THREE.InstancedMesh(irregularRock(18.7,1),material,Math.ceil(cliffs.length*105*this.world.theme.decorationDensity));
     mesh.name='embedded-foot-scree'; let count=0;
     for (const cliff of cliffs) {
       const contour=getSolidFootprint(cliff)!;
-      for (let i=0;i<105;i++) {
+      for (let i=0;i<Math.floor(105*this.world.theme.decorationDensity);i++) {
         const edge=Math.floor(random()*contour.length), a=contour[edge], b=contour[(edge+1)%contour.length], t=random();
         const length=Math.hypot(b.x-a.x,b.z-a.z), distance=.5+Math.pow(random(),1.8)*17;
         const x=a.x+(b.x-a.x)*t+(b.z-a.z)/length*distance;
         const z=a.z+(b.z-a.z)*t-(b.x-a.x)/length*distance;
+        if(atlasReserved(this.world,x,z))continue;
         if(this.world.solids.some(s=>contains(s,{x,z},.2)) || this.world.shelters.some(s=>Math.hypot(x-s.x,z-s.z)<s.radius+3)
           || this.world.deposits.some(d=>Math.hypot(x-d.x,z-d.z)<5.5)) continue;
         const size=(.45+random()*1.7)*(1-distance/30);
@@ -273,9 +313,10 @@ export class Landscape {
   private stars() {
     // A distant, motionless stellar backdrop adds depth without atmospheric fog.
     const backdrop = new THREE.Mesh(new THREE.PlaneGeometry(1500, 1500), new THREE.ShaderMaterial({
-      depthWrite: false,
+      depthWrite: false, uniforms:{backgroundColor:{value:new THREE.Color(this.world.theme.background)}},
       vertexShader: 'varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
       fragmentShader: `
+        uniform vec3 backgroundColor;
         varying vec2 vUv;
         float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
         float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+1.0),f.x),f.y);}
@@ -283,18 +324,18 @@ export class Landscape {
           vec2 p=vUv*7.0;
           float field=noise(p)*.55+noise(p*2.03+3.1)*.28+noise(p*4.07)*.12+noise(p*8.1)*.05;
           float ribbon=exp(-pow((vUv.y-vUv.x*.4-.3)*3.0,2.0));
-          vec3 base=vec3(.0025,.006,.011);
+          vec3 base=backgroundColor;
           vec3 blue=vec3(.005,.013,.023)*smoothstep(.32,.77,field)*ribbon;
           gl_FragColor=vec4(base+blue,1.0);
           #include <tonemapping_fragment>
           #include <colorspace_fragment>
         }`,
     }));
-    backdrop.rotation.x = -Math.PI / 2; backdrop.position.y = -180; backdrop.renderOrder = -10; backdrop.frustumCulled = false; this.root.add(backdrop);
+    backdrop.userData.skyBackdrop='clouds';backdrop.rotation.x = -Math.PI / 2; backdrop.position.y = -180; backdrop.renderOrder = -10; backdrop.frustumCulled = false; this.root.add(backdrop);
     const random = seededRandom(7113), positions = [], colors = [];
     for (let i = 0; i < 3200; i++) { positions.push((random() - .5) * 1200, -120 - random() * 220, (random() - .5) * 1200); const c = new THREE.Color('#b2c7db').multiplyScalar(.22 + Math.pow(random(), 4) * .95); colors.push(c.r,c.g,c.b); }
     const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3)); geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
-    this.root.add(new THREE.Points(geometry, new THREE.PointsMaterial({ vertexColors: true, size: 1.5, sizeAttenuation: false, transparent: true, opacity: .86, depthWrite: false })));
+    const stars=new THREE.Points(geometry, new THREE.PointsMaterial({ vertexColors: true, size: 1.5, sizeAttenuation: false, transparent: true, opacity: .86, depthWrite: false }));stars.userData.skyBackdrop='stars';this.root.add(stars);
   }
   private shelters() {
     const ivory = new THREE.MeshStandardMaterial({ color: '#b7c7b9', metalness: .6, roughness: .4 });
@@ -312,12 +353,15 @@ export class Landscape {
   private border() {
     const points=[];
     for(let edge=0;edge<4;edge++) for(let i=0;i<=100;i++) {
-      const t=-CONFIG.worldHalf+i/100*CONFIG.worldHalf*2;
-      const x=edge===0?t:edge===1?CONFIG.worldHalf:edge===2?-t:-CONFIG.worldHalf, z=edge===0?-CONFIG.worldHalf:edge===1?t:edge===2?CONFIG.worldHalf:-t;
+      const t=-this.world.bounds+i/100*this.world.bounds*2;
+      const x=edge===0?t:edge===1?this.world.bounds:edge===2?-t:-this.world.bounds, z=edge===0?-this.world.bounds:edge===1?t:edge===2?this.world.bounds:-t;
       points.push(new THREE.Vector3(x,groundHeight(this.world,x,z)+.2,z));
     }
     const border=new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineDashedMaterial({color:'#c9b680',transparent:true,opacity:.3,dashSize:2,gapSize:4})); border.computeLineDistances(); this.root.add(border);
   }
-  setQuality(quality: Quality) { for(const decoration of this.decorations) decoration.mesh.count=Math.floor(decoration.count*(quality==='high'?1:.55)); }
+  setQuality(quality: Quality) {this.quality=quality;for(const mesh of this.solids){const a=mesh.userData.asteroidAsset;if(!a)continue;
+    const sculpt=mesh.userData.sculpt as {compiled:NonNullable<ReturnType<typeof getSculpt>>;source:SculptDefinition}|undefined;
+    if(sculpt){mesh.geometry.dispose();mesh.material.dispose();mesh.geometry=sculptGeometry(sculpt.compiled[quality]);mesh.material=this.assets.sculptMaterial(this.world.theme.rockTint,sculpt.source,quality);mesh.customDepthMaterial?.dispose();mesh.customDepthMaterial=this.assets.sculptDepth(sculpt.source,quality);}
+  } for(const decoration of this.decorations) decoration.mesh.count=Math.floor(decoration.count*(quality==='high'?1:.55)); }
   animate(time: number) { if(this.shield) (this.shield.material as THREE.MeshBasicMaterial).opacity=.35+Math.sin(time*.8)*.08; }
 }

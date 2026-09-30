@@ -1,13 +1,16 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import {stoneMaterial,stoneDepth} from './stone-material';
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
+import type {SculptDefinition} from './sculpt';
 
-export type ModelId = 'speeder' | 'atlas';
-export type SurfaceId = 'sand' | 'rock';
+export type ModelId = string;
+export type SurfaceId = string;
 export interface SurfaceMaps { color: THREE.Texture; normal: THREE.Texture; orm: THREE.Texture }
 
 /** Owns shared GPU resources for the application lifetime, independently of level instances. */
 export class AssetLibrary {
+  private geometryCache = new Map<string, THREE.BufferGeometry>();
   private models = new Map<ModelId, THREE.Group>();
   readonly surfaces = new Map<SurfaceId, SurfaceMaps>();
   private decoder: KTX2Loader;
@@ -22,11 +25,13 @@ export class AssetLibrary {
   async load(progress: (loaded: number, total: number, label: string) => void) {
     this.loading = true;
     let loaded = 0;
-    const total = 8, base = `${import.meta.env.BASE_URL}assets/`;
+    const models=['speeder','atlas'];
+    const surfaces=['sand','rock','stone'];
+    const total = models.length+surfaces.length*3, base = `${import.meta.env.BASE_URL}assets/`;
     const complete = (label: string) => progress(++loaded, total, label);
     const gltf = new GLTFLoader();
     const results = await Promise.allSettled([
-      ...(['speeder', 'atlas'] as const).map(async id => {
+      ...models.map(async id => {
         const result = await gltf.loadAsync(`${base}models/${id}.glb`);
         result.scene.traverse(object => {
           if (!(object instanceof THREE.Mesh)) return;
@@ -37,9 +42,9 @@ export class AssetLibrary {
             for (const value of Object.values(material)) if (value instanceof THREE.Texture) value.userData.shared = true;
           }
         });
-        this.models.set(id, result.scene); complete(id === 'speeder' ? 'Speeder' : 'ATLAS');
+        this.models.set(id, result.scene); complete(id);
       }),
-      ...(['sand', 'rock'] as const).map(async id => {
+      ...surfaces.map(async id => {
         const decoded = await Promise.allSettled((['color', 'normal', 'orm'] as const).map(async channel => {
           const texture = await this.decoder.loadAsync(`${base}textures/${id}-${channel}.ktx2`);
           texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
@@ -67,6 +72,24 @@ export class AssetLibrary {
     if (!model) throw new Error(`Asset nicht geladen: ${id}`);
     return model.clone(true);
   }
+  geometry(id:string){
+    let geometry=this.geometryCache.get(id);if(geometry)return geometry;
+    const model=this.models.get(id)!;model.updateMatrixWorld(true);
+    model.traverse(o=>{if(!geometry&&o instanceof THREE.Mesh)geometry=o.geometry.clone().applyMatrix4(o.matrixWorld);});
+    if(!geometry)throw new Error('Modell ohne Geometrie: '+id);
+    const result=geometry as THREE.BufferGeometry;
+    result.userData.shared=true;this.geometryCache.set(id,result);return result;
+  }
+  rubbleGeometry(){
+    const key='rubble';let geometry=this.geometryCache.get(key);
+    if(!geometry){geometry=new THREE.IcosahedronGeometry(1,1);const p=geometry.getAttribute('position');
+      for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i),f=.9+.12*Math.sin(x*7+z*4)*Math.cos(y*5);p.setXYZ(i,x*f,y*f*.73,z*f);}
+      const paint=new Float32Array(p.count*4);for(let i=0;i<p.count;i++)paint[i*4]=.65;
+      geometry.setAttribute('sculptPaint',new THREE.BufferAttribute(paint,4));geometry.setAttribute('sculptGlow',new THREE.BufferAttribute(new Float32Array(paint.length/4),1));geometry.computeVertexNormals();geometry.userData.shared=true;this.geometryCache.set(key,geometry);}
+    return geometry;
+  }
+  sculptMaterial(tint:string,source:SculptDefinition,quality:'high'|'standard'){return stoneMaterial(this.surfaces.get('stone')!,tint,source,quality);}
+  sculptDepth(source:SculptDefinition,quality:'high'|'standard'){return stoneDepth(this.surfaces.get('stone')!,source,quality);}
   material(id: SurfaceId, parameters: THREE.MeshStandardMaterialParameters = {}) {
     const maps = this.surfaces.get(id)!;
     return new THREE.MeshStandardMaterial({ map: maps.color, normalMap: maps.normal, roughnessMap: maps.orm, metalnessMap: maps.orm,
@@ -90,7 +113,7 @@ export class AssetLibrary {
       Object.values(material).forEach(t => { if (t instanceof THREE.Texture) textures.add(t); }); material.dispose();
     }
     geometries.forEach(g => g.dispose()); textures.forEach(t => { t.dispose(); if (typeof ImageBitmap !== 'undefined' && t.image instanceof ImageBitmap) t.image.close(); });
-    this.models.clear(); this.surfaces.clear(); this.ownedTextures.clear();
+    this.geometryCache.forEach(g=>g.dispose());this.geometryCache.clear();this.models.clear(); this.surfaces.clear(); this.ownedTextures.clear();
   }
 }
 
@@ -99,6 +122,7 @@ export function disposeObject(root: THREE.Object3D) {
   root.traverse(object => {
     if (object instanceof THREE.InstancedMesh) object.dispose();
     const mesh = object as THREE.Mesh;
+    if(mesh.customDepthMaterial)materials.add(mesh.customDepthMaterial);
     if (mesh.geometry && !mesh.geometry.userData.shared) geometries.add(mesh.geometry);
     if (mesh.material) for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) if (!material.userData.shared) materials.add(material);
   });

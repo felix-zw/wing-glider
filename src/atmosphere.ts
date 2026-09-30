@@ -9,10 +9,11 @@ attribute vec4 cloud;
 uniform float time;
 uniform vec3 follow;
 uniform float terrainSeed;
+uniform vec4 serviceArea;
 uniform vec4 hills[6];
 uniform vec3 shelters[9];
 uniform vec4 cliffs[6];
-uniform vec2 cliffShapes[6];
+uniform vec3 cliffShapes[6];
 varying vec2 vUv;
 varying vec3 vWorld;
 varying float vSeed;
@@ -36,11 +37,13 @@ float terrainHeight(vec2 p) {
   h+=max(hillRise,uplift);
   for(int i=0;i<9;i++) {
     float d=distance(p,shelters[i].xy);
-    if(d<30.0) {
-      float t=clamp((d-12.0)/18.0,0.0,1.0);
+    if(d<shelters[i].z+18.0) {
+      float t=clamp((d-shelters[i].z)/18.0,0.0,1.0);
       h=1.5+(h-1.5)*t*t*(3.0-2.0*t);
     }
   }
+  float baseD=distance(p,serviceArea.xy);
+  if(serviceArea.w>0.5 && baseD<serviceArea.z+8.0){float t=clamp((baseD-serviceArea.z)/8.0,0.0,1.0);h=1.5+(h-1.5)*t*t*(3.0-2.0*t);}
   return h;
 }
 void main() {
@@ -103,8 +106,8 @@ export class Atmosphere {
     const shelters=world.shelters.map(s=>new THREE.Vector3(s.x,s.z,s.radius));
     const hills=world.structures.filter(s=>s.kind==='hill').map(h=>new THREE.Vector4(h.x,h.z,h.radius,h.height));
     const cliffs=world.solids.filter(s=>s.kind==='cliff');
-    const material=new THREE.ShaderMaterial({vertexShader:dustVertex,fragmentShader:dustFragment,transparent:true,depthTest:true,depthWrite:false,side:THREE.DoubleSide,uniforms:{time:{value:0},intensity:{value:0},color:{value:new THREE.Color('#c6ab7e')},follow:{value:new THREE.Vector3()},terrainSeed:{value:world.definition.seed*.001},hills:{value:hills},shelters:{value:shelters},
-      cliffs:{value:cliffs.map(c=>new THREE.Vector4(c.x,c.z,c.halfX,c.halfZ))},cliffShapes:{value:cliffs.map(c=>new THREE.Vector2(c.height,cliffFacing(c)))}}});
+    const material=new THREE.ShaderMaterial({vertexShader:dustVertex.replaceAll('hills[6]','hills['+Math.max(1,hills.length)+']').replaceAll('cliffs[6]','cliffs['+Math.max(1,cliffs.length)+']').replaceAll('cliffShapes[6]','cliffShapes['+Math.max(1,cliffs.length)+']').replaceAll('shelters[9]','shelters['+Math.max(1,shelters.length)+']').replace('i<6;i++) {','i<'+hills.length+';i++) {').replace('i<6;i++) uplift','i<'+cliffs.length+';i++) uplift').replace('i<9;i++)','i<'+shelters.length+';i++)'),fragmentShader:dustFragment.replaceAll('shelters[9]','shelters['+Math.max(1,shelters.length)+']').replace('i<9;i++)','i<'+shelters.length+';i++)'),transparent:true,depthTest:true,depthWrite:false,side:THREE.DoubleSide,uniforms:{time:{value:0},intensity:{value:0},color:{value:new THREE.Color('#c6ab7e')},follow:{value:new THREE.Vector3()},serviceArea:{value:new THREE.Vector4(world.base.x,world.base.z,world.base.radius,world.shelters.some(s=>Math.hypot(s.x-world.base.x,s.z-world.base.z)<1)?0:1)},terrainSeed:{value:world.definition.seed*.001},hills:{value:hills.length?hills:[new THREE.Vector4()]},shelters:{value:shelters.length?shelters:[new THREE.Vector3(9999,9999,0)]},
+      cliffs:{value:cliffs.length?cliffs.map(c=>new THREE.Vector4(c.x,c.z,c.halfX,c.halfZ)):[new THREE.Vector4()]},cliffShapes:{value:cliffs.length?cliffs.map(c=>new THREE.Vector3(c.height,cliffFacing(c),c.rotation??0)):[new THREE.Vector3()]}}});
     this.dust=new THREE.Mesh(geo,material);this.dust.frustumCulled=false;this.dust.renderOrder=3;this.root.add(this.dust);
   }
   setQuality(quality: Quality) {this.quality=quality;if(this.dust)this.dust.geometry.instanceCount=quality==='high'?90:48;}

@@ -1,29 +1,29 @@
-import { getSolidFootprint, type Solid } from './levels';
+import { getSolidFootprints, type Solid } from './levels';
 import type { Position } from './resources';
 
 export interface Contact extends Position { t: number; nx: number; nz: number; solid: Solid }
 const EPS = 1e-7;
 
-/** Signed distance to a convex polygon and the nearest outward escape direction. */
-function boundary(points: readonly Position[], p: Position) {
-  let inside = true, distanceSq = Infinity, x = 0, z = 0, nx = 0, nz = 0;
-  for (let i = 0; i < points.length; i++) {
+/** Even-odd occupancy supports disjoint islands and interior tunnels. */
+function boundary(loops: readonly (readonly Position[])[], p: Position) {
+  let inside = false, distanceSq = Infinity, x = 0, z = 0, nx = 0, nz = 0;
+  for (const points of loops)for (let i = 0; i < points.length; i++) {
     const a = points[i], b = points[(i + 1) % points.length], ex = b.x - a.x, ez = b.z - a.z;
     const lengthSq = ex * ex + ez * ez, length = Math.sqrt(lengthSq);
-    if (ex * (p.z - a.z) - ez * (p.x - a.x) < -EPS) inside = false;
+    if ((a.z>p.z)!==(b.z>p.z) && p.x<(b.x-a.x)*(p.z-a.z)/(b.z-a.z)+a.x) inside=!inside;
     const u = Math.max(0, Math.min(1, ((p.x - a.x) * ex + (p.z - a.z) * ez) / lengthSq));
     const qx = a.x + u * ex, qz = a.z + u * ez, d = (p.x - qx) ** 2 + (p.z - qz) ** 2;
     if (d < distanceSq) { distanceSq = d; x = qx; z = qz; nx = ez / length; nz = -ex / length; }
   }
   const distance = Math.sqrt(distanceSq);
-  if (!inside && distance > EPS) { nx = (p.x - x) / distance; nz = (p.z - z) / distance; }
+  if (distance>EPS){nx=(inside?x-p.x:p.x-x)/distance;nz=(inside?z-p.z:p.z-z)/distance;}
   return { distance: inside ? -distance : distance, x, z, nx, nz };
 }
 
 export function contains(s: Solid, p: Position, radius = 0): boolean {
-  const points = getSolidFootprint(s);
-  if (points) return boundary(points, p).distance < radius - EPS;
-  return s.kind === 'asteroid' && Math.hypot(p.x - s.x, p.z - s.z) < s.radius + radius - EPS;
+  const loops = getSolidFootprints(s);
+  if (loops.length) return boundary(loops, p).distance < radius - EPS;
+  return s.kind === 'asteroid' && !s.footprints && Math.hypot(p.x - s.x, p.z - s.z) < s.radius + radius - EPS;
 }
 
 /** Continuous disk-vs-circle / disk-vs-convex-polygon sweep.
@@ -48,11 +48,11 @@ export function sweep(from: Position, to: Position, solids: readonly Solid[], ra
     }
   };
   for (const solid of solids) {
-    const points = getSolidFootprint(solid);
-    if (!points) { if (solid.kind === 'asteroid') circle(solid, solid.x, solid.z, solid.radius + radius); continue; }
-    const start = boundary(points, from);
+    const loops = getSolidFootprints(solid);
+    if (!loops.length) { if (solid.kind === 'asteroid'&&!solid.footprints) circle(solid, solid.x, solid.z, solid.radius + radius); continue; }
+    const start = boundary(loops, from);
     if (start.distance < radius - EPS) { record(solid, 0, start.nx, start.nz); continue; }
-    for (let i = 0; i < points.length; i++) {
+    for(const points of loops)for (let i = 0; i < points.length; i++) {
       const a = points[i], b = points[(i + 1) % points.length], ex = b.x - a.x, ez = b.z - a.z;
       const lengthSq = ex * ex + ez * ez, length = Math.sqrt(lengthSq), nx = ez / length, nz = -ex / length;
       const approaching = dx * nx + dz * nz;
@@ -76,12 +76,12 @@ export function moveOutside(from: Position, to: Position, solids: readonly Solid
   for (let pass = 0; pass < 8; pass++) {
     let changed = false;
     for (const solid of solids) {
-      const points = getSolidFootprint(solid);
-      if (points) {
-        const near = boundary(points, position);
+      const loops = getSolidFootprints(solid);
+      if (loops.length) {
+        const near = boundary(loops, position);
         if (near.distance >= radius - EPS) continue;
         position.x = near.x + near.nx * (radius + 0.002); position.z = near.z + near.nz * (radius + 0.002); changed = true;
-      } else if (solid.kind === 'asteroid' && contains(solid, position, radius)) {
+      } else if (solid.kind === 'asteroid'&&!solid.footprints && contains(solid, position, radius)) {
         const dx = position.x - solid.x, dz = position.z - solid.z, length = Math.hypot(dx, dz);
         position.x = solid.x + (length ? dx / length : 1) * (solid.radius + radius + 0.002);
         position.z = solid.z + (length ? dz / length : 0) * (solid.radius + radius + 0.002); changed = true;

@@ -37,8 +37,8 @@ function checkTerrainGPUParity() {
   geometry.setAttribute('samplePoint',new THREE.Float32BufferAttribute(samples,3));
   const material=new THREE.ShaderMaterial({depthTest:false,depthWrite:false,blending:THREE.NoBlending,uniforms:{
     cliffs:{value:cliffs.map(c=>new THREE.Vector4(c.x,c.z,c.halfX,c.halfZ))},
-    shapes:{value:cliffs.map(c=>new THREE.Vector2(c.height,cliffFacing(c)))},
-  },vertexShader:`attribute vec3 samplePoint; uniform vec4 cliffs[6]; uniform vec2 shapes[6]; varying float height;
+    shapes:{value:cliffs.map(c=>new THREE.Vector3(c.height,cliffFacing(c),c.rotation??0))},
+  },vertexShader:`attribute vec3 samplePoint; uniform vec4 cliffs[6]; uniform vec3 shapes[6]; varying float height;
     ${cliffUpliftGLSL}
     void main(){int i=int(samplePoint.z);height=cliffUplift(cliffs[i],shapes[i],samplePoint.xy);gl_Position=vec4(position,1.0);gl_PointSize=1.0;}`,
   fragmentShader:'varying float height; void main(){gl_FragColor=vec4(height,0.0,0.0,1.0);}'});
@@ -76,7 +76,7 @@ function checkVehicleGroundClearance() {
   check(Math.abs(ship.rotation.x)<1e-8&&Math.abs(ship.rotation.z)<1e-8,'Space flight resets terrain pitch and roll');
 }
 function deliver() {
-  state.x = 0; state.z = 0; setVelocity(state,0);
+  state.x = getLevelWorld(state.levelId).base.x; state.z = getLevelWorld(state.levelId).base.z; setVelocity(state,0);
   key('KeyE', true); step(0.01); key('KeyE', false);
 }
 function checkThrusters() {
@@ -103,8 +103,22 @@ function weatherBreak() {
   while (state.phase !== 'calm') advance(state, neutralInput(), phaseDuration(state.phase) - state.phaseTime);
 }
 function placeNear(d: Deposit) {
-  state.x = d.x + d.surface!.nx * 5; state.z = d.z + d.surface!.nz * 5; setVelocity(state,0);
+  const distance=state.environment.kind==='space'?10:5;
+  state.x = d.x + d.surface!.nx * distance; state.z = d.z + d.surface!.nz * distance; setVelocity(state,0);
   state.turret = Math.atan2(d.x - state.x, -(d.z - state.z));
+}
+// Painted deposits deplete at the hit cell; follow the remaining surface instead
+// of expecting one stationary beam to remove an entire painted patch remotely.
+function mineUnits(d:Deposit,amount:number,code='KeyX') {
+  const target=Math.max(0,d.remaining-amount);key(code,true);
+  for(let i=0;i<120*(amount*RESOURCES[d.resource].seconds+5)&&d.remaining>target+1e-7;i++){
+    const cell=d.surface?.cells?.find(c=>c.valid&&c.mass>1e-8);
+    if(cell){const n=cell.normal,length=Math.hypot(n.x,n.z);state.x=cell.x+n.x/length*10;state.z=cell.z+n.z/length*10;setVelocity(state,0);state.turret=Math.atan2(cell.x-state.x,-(cell.z-state.z));}
+    controls.pointer.active=true;
+    advance(state,controls.read(state.turret),Math.min(1/120,(d.remaining-target)*RESOURCES[d.resource].seconds));
+  }
+  key(code,false);step(1.2);
+  check(Math.abs(d.remaining-target)<1e-6,`${d.id}: local beam extracts ${amount} requested units`);
 }
 async function checkDisposeDuringAssetLoad() {
   const host = document.createElement('div'); host.hidden = true; document.body.append(host);
@@ -207,16 +221,16 @@ document.getElementById('run')!.addEventListener('click', async () => {
         if (mined >= quotas[resource]) break;
         weatherBreak(); placeNear(d);
         const count = Math.min(12, quotas[resource] - mined);
-        key('KeyX', true); step(count * RESOURCES[resource].seconds); key('KeyX', false); step(1.2);
+        mineUnits(d,count);
         mined += count;
-        check(d.remaining === 12 - count, `${resource}: ${count} units mined with keyboard laser`);
+        check(Math.abs(d.remaining-(12-count))<1e-6, `${resource}: ${count} units mined with keyboard laser`);
       }
       if (resource === 'ferrite') {
         check(inventoryTotal(state.resources.cargo) === 30, 'Cargo reaches 30 units');
         check(!state.mission.completed && !state.mission.counts['ferrite-delivery'], 'Onboard resources do not count as delivered');
         // An extra unit remains loose while full, then becomes collectible after unloading.
         const d = state.resources.deposits.find(d => d.resource === resource && d.remaining > 0)!;
-        placeNear(d); key('ShiftLeft', true); step(1); key('ShiftLeft', false); step(1);
+        placeNear(d);mineUnits(d,1,'ShiftLeft');
         check(inventoryTotal(state.resources.cargo) === 30 && state.resources.fragments.length === 1, 'Full cargo leaves mined fragments in the world');
         const x = state.x, z = state.z;
         key('KeyE', true); step(0.01); key('KeyE', false);
@@ -233,7 +247,7 @@ document.getElementById('run')!.addEventListener('click', async () => {
     check(inventoryTotal(state.resources.storage) === 61, 'All deliveries, including surplus, retained in ATLAS');
     const completion = state.mission.completedAt;
     const d = state.resources.deposits.find(d => d.resource === 'crystal' && d.remaining > 0)!;
-    weatherBreak(); placeNear(d); key('ShiftRight', true); step(1.8); key('ShiftRight', false); step(1.2); deliver();
+    weatherBreak(); placeNear(d);mineUnits(d,1,'ShiftRight');deliver();
     check(state.mission.completedAt === completion && state.resources.storage.crystal === 11, 'Continue mining and delivering after completion');
     const snapshot = JSON.stringify(state); advance(state, { ...neutralInput(), mine: true, unloadPressed: true }, 0);
     check(JSON.stringify(state) === snapshot, 'Zero-time pause freezes gameplay');
@@ -243,6 +257,13 @@ document.getElementById('run')!.addEventListener('click', async () => {
     state = createState('belt'); world.reset(state); state.x = -10; state.z = 80;
     if (state.environment.kind === 'space') state.environment.asteroids = [{ id: 0, x: -10, z: 65, radius: 2, vx: 0, vz: 12, rotation: 0, respawns: 0 }];
     step(1.5); check(state.health < 100 && state.lastDamage === 'asteroid', 'Moving asteroids collide with the ship');
+    // LOD geometries upload lazily on first visibility. Warm both qualities
+    // before comparing repeated level disposal, rather than counting that cache as a leak.
+    for(const id of ['aster','belt'])for(const quality of ['high','standard'] as const){
+      const warm=createState(id);world.setQuality(quality);world.reset(warm);
+      for(const p of [getLevelWorld(id).spawn,...getLevelWorld(id).solids]){warm.x=p.x;warm.z=p.z;world.render(warm,0,0);}
+      await new Promise<void>(resolve=>requestAnimationFrame(()=>resolve()));
+    }
     const memory = new Map<string, { geometries: number; textures: number }>();
     for (let i = 0; i < 16; i++) {
       const id: LevelId = i % 2 === 0 ? 'aster' : 'belt', quality = i % 4 < 2 ? 'high' : 'standard';
@@ -251,7 +272,7 @@ document.getElementById('run')!.addEventListener('click', async () => {
       world.render(state, 1 / 60, 0);
       check(state.resources.deposits.every(d => d.id.startsWith(id)), `${id}: no previous-level deposits`);
       const usage = { ...world.renderer.info.memory }, key = `${id}/${quality}`, baseline = memory.get(key);
-      if (baseline) check(usage.geometries === baseline.geometries && usage.textures === baseline.textures, `${key}: GPU geometry and texture counts stable after switch`);
+      if (baseline) check(usage.geometries === baseline.geometries && usage.textures === baseline.textures, `${key}: GPU geometry and texture counts stable after switch (${usage.geometries}/${usage.textures}, baseline ${baseline.geometries}/${baseline.textures})`);
       else memory.set(key, usage);
     }
     state = createState(); world.setQuality('high'); world.reset(state); world.render(state, 1 / 60, 0);

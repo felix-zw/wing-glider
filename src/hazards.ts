@@ -1,4 +1,4 @@
-import { COLLISION, CONFIG, SPACE } from './config';
+import { COLLISION, SPACE } from './config';
 import { contains, moveOutside, sweep } from './collision';
 import { seededRandom, type LevelWorld, type Solid } from './levels';
 import type { Position } from './resources';
@@ -16,9 +16,9 @@ function spawn(id: number, respawns: number, world: LevelWorld, player: Position
   const speed = SPACE.minSpeed + random() * (SPACE.maxSpeed - SPACE.minSpeed);
   let x = 0, z = 0;
   for (let attempt = 0; attempt < 100; attempt++) {
-    const edge = Math.floor(random() * 4), along = (random() * 2 - 1) * CONFIG.worldHalf;
-    x = edge < 2 ? (edge === 0 ? -1 : 1) * (CONFIG.worldHalf + 5) : along;
-    z = edge >= 2 ? (edge === 2 ? -1 : 1) * (CONFIG.worldHalf + 5) : along;
+    const edge = Math.floor(random() * 4), along = (random() * 2 - 1) * world.bounds;
+    x = edge < 2 ? (edge === 0 ? -1 : 1) * (world.bounds + 5) : along;
+    z = edge >= 2 ? (edge === 2 ? -1 : 1) * (world.bounds + 5) : along;
     if (Math.hypot(x - player.x, z - player.z) > 45 && !world.solids.some(s => contains(s, { x, z }, radius))) break;
   }
   const tx = (random() * 2 - 1) * 160, tz = (random() * 2 - 1) * 160, length = Math.hypot(tx - x, tz - z);
@@ -42,11 +42,11 @@ export function advanceHazards(asteroids: FlyingAsteroid[], world: LevelWorld, p
       impact(player, Math.hypot(player.vx-a.vx,player.vz-a.vz), 'asteroid');
       const separated = { x: a.x + hit.nx * (a.radius + COLLISION.shipRadius + 0.01), z: a.z + hit.nz * (a.radius + COLLISION.shipRadius + 0.01) };
       const safe = moveOutside(previous, separated, world.solids, COLLISION.shipRadius).position;
-      player.x = Math.max(-CONFIG.worldHalf + 3, Math.min(CONFIG.worldHalf - 3, safe.x));
-      player.z = Math.max(-CONFIG.worldHalf + 3, Math.min(CONFIG.worldHalf - 3, safe.z)); player.vx *= 0.35;player.vz *= 0.35;
+      player.x = Math.max(-world.bounds + 3, Math.min(world.bounds - 3, safe.x));
+      player.z = Math.max(-world.bounds + 3, Math.min(world.bounds - 3, safe.z)); player.vx *= 0.35;player.vz *= 0.35;
       const dot = a.vx * hit.nx + a.vz * hit.nz;
       if (dot > 0) { a.vx -= 2 * dot * hit.nx; a.vz -= 2 * dot * hit.nz; }
     }
-    if (Math.abs(a.x) > CONFIG.worldHalf + 12 || Math.abs(a.z) > CONFIG.worldHalf + 12) Object.assign(a, spawn(a.id, a.respawns + 1, world, player));
+    if (Math.abs(a.x) > world.bounds + 12 || Math.abs(a.z) > world.bounds + 12) Object.assign(a, spawn(a.id, a.respawns + 1, world, player));
   }
 }

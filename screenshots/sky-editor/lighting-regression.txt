@@ -1,0 +1,43 @@
+Lighting integration
+PASS emission settings update without rebuilding terrain or collision
+PASS core shader uniform changes immediately
+PASS quality switch preserves uncompiled live glow edits
+PASS lamp edits retain the existing terrain mesh
+PASS light undo retains terrain mesh
+PASS lamp edit undo
+PASS lamp edit redo
+PASS planet selection opens spatial sky view
+PASS planet angular size updates immediately
+PASS invisible planet keeps its lighting
+PASS sky view returns to level camera
+PASS glow brush stroke commits
+PASS glow brush preserves geometry
+PASS Ctrl commits an erase mask stroke
+PASS spray creates an ore layer in lit scene
+PASS only mined ore cells reduce their emitted light
+PASS mining preview does not mutate the authored ore
+PASS IndexedDB preserves complete lighting and glow
+PASS JSON light package round trip
+PASS template stores rock and ore glow
+PASS inserted template retains independent core glow
+PASS inserted template retains ore glow
+PASS deleting template does not change inserted glow
+PERF {"quality":"high","fps":56.742954411375614,"p95":18.40000009536743,"calls":733,"memory":{"geometries":165,"textures":33},"lights":{"point":4,"spot":1}}
+PASS high: local light budget enforced
+PERF {"quality":"standard","fps":56.625141561579795,"p95":18.5,"calls":311,"memory":{"geometries":165,"textures":29},"lights":{"point":2,"spot":1}}
+PASS standard: local light budget enforced
+PASS valid design starts an isolated play session
+DENSE PLAY 1280x720
+PERF {"quality":"high","fps":56.855870371184594,"p95":18.799999952316284,"calls":764,"memory":{"geometries":241,"textures":32},"lights":{"point":4,"spot":2}}
+PASS high: local light budget enforced
+PERF {"quality":"standard","fps":56.67060212514758,"p95":18.399999856948853,"calls":349,"memory":{"geometries":241,"textures":28},"lights":{"point":2,"spot":1}}
+PASS standard: local light budget enforced
+PASS local lamps and sky lighting also render on Aster
+PASS play cycle starts
+PASS play cycle starts
+PASS play cycle starts
+PASS play cycle starts
+PASS repeated editor/play returns do not accumulate geometry
+MEMORY [174,174,174,174]
+PASS all lighting and glow shaders compile
+ALL LIGHTING CHECKS PASSED

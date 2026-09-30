@@ -8,7 +8,10 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 const directory = new URL('../../public/assets/models/', import.meta.url);
 const expected = {
   speeder: { maxMeshes: 35, nodes: ['mining_turret', 'laser_socket', 'exhaust_left', 'exhaust_right', 'reverse_left', 'reverse_right', 'side_left_front', 'side_left_aft', 'side_right_front', 'side_right_aft', 'cargo_socket'] },
-  atlas: { maxMeshes: 70, nodes: ['loading_socket', 'worklight_left', 'worklight_right'] },
+  atlas: { maxMeshes: 70, nodes: ['loading_socket', 'worklight_left', 'worklight_right', 'bay_socket', 'exit_socket', 'hangar_door', 'ramp_hinge',
+    ...Array.from({length:4},(_,i)=>'ramp_section_'+i),
+    ...['left_front','left_aft','right_front','right_aft'].flatMap(id=>['hip','upper','knee','lower','piston','foot','lift'].map(part=>part+'_'+id)),
+    'cruise_left','cruise_right','brake_left','brake_right'] },
 };
 
 for (const [name, config] of Object.entries(expected)) {
@@ -55,6 +58,17 @@ for (const [name, config] of Object.entries(expected)) {
     const after = socket.getWorldPosition(new Vector3());
     assert.ok(Math.abs(before.y - after.y) < .001, 'turret rotates around game Y');
     assert.ok(after.distanceTo(before) > 1, 'laser socket moves with turret rotation');
+  }
+  if(name==='atlas') {
+    const ramp=scene.getObjectByName('ramp_hinge'),door=scene.getObjectByName('hangar_door'),bay=scene.getObjectByName('bay_socket');
+    const socket=scene.getObjectByName('loading_socket'),before=socket.getWorldPosition(new Vector3()),bayBefore=bay.getWorldPosition(new Vector3());
+    ramp.rotation.x=.25;scene.updateMatrixWorld(true);
+    assert.ok(socket.getWorldPosition(new Vector3()).distanceTo(before)>3,'loading socket follows the independent ramp');
+    assert.ok(bay.getWorldPosition(new Vector3()).distanceTo(bayBefore)<.001,'moving ramp leaves the bay fixed');
+    assert.equal(socket.parent.name,'ramp_section_3');
+    door.position.y+=5.1;scene.updateMatrixWorld(true);
+    assert.ok(new Box3().setFromObject(door).min.y>5,'open door clears the complete speeder');
+    assert.ok(triangles<50000,'articulated ATLAS triangle budget');
   }
   console.log(`${name}: ${meshes} meshes, ${triangles} triangles, ${(buffer.length / 1024).toFixed(0)} KiB; transforms and sockets verified`);
 }

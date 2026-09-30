@@ -1,0 +1,7 @@
+{
+  "selectedWorld": "Asteroidengürtel mit Erzadern, ATLAS und fliegenden Asteroiden",
+  "editorName": "Asteroidengürtel · Entwurf",
+  "menuHidden": true,
+  "atmosphereHeight": "8",
+  "errors": []
+}

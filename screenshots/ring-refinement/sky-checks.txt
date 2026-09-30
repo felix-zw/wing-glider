@@ -1,0 +1,48 @@
+Spatial sky integration
+PASS planet selection opens full spatial viewport instead of SVG
+PASS perspective camera and hemisphere use the selected distance
+PASS hidden illumination source has an editor marker
+PASS selected celestial body starts a drag
+PASS live drag leaves the authored document untouched until release
+PASS live direction preview does not rebuild world or miniature
+PASS direction drag commits on the upper shell at fixed distance
+PASS direction gesture is exactly one global undo step
+PASS redo restores the exact direction
+PASS selected celestial body starts a drag
+PASS Escape cancels the gesture and stays in sky view
+PASS selected celestial body starts a drag
+PASS pointer cancellation restores the authored lighting
+PASS selected celestial body starts a drag
+PASS lost capture restores the authored lighting
+PASS golden rim handle starts a distance gesture
+PASS distance grows while the camera framing stays fixed
+PASS distance gesture preserves physical planet size
+PASS distance preserves direction and global light strength
+PASS distance gesture is one undo step
+PASS distance redo restores the exact radius
+PASS lower hemisphere immediately mirrors the selected body at fixed distance
+PASS selected celestial body starts a drag
+PASS mirrored body is immediately draggable without touching the horizon
+PASS mirror undo restores both position and the matching hemisphere
+PASS mirror redo restores position and matching hemisphere
+PASS return to level restores its independent camera
+PASS sky camera and hemisphere survive a level-view round trip
+PASS Alt-left rotates the camera
+PASS middle drag pans without a document edit
+PASS view gestures introduce no global undo entries
+PASS numeric distance and fit at 800 m
+PASS numeric distance and fit at 20000 m
+PASS radial drag clamps at maximum distance
+PASS radial drag clamps at minimum distance
+PASS hidden light selects its hemisphere and camera
+PASS sky design can start a separate play session
+PASS play return preserves sky view, camera, document and selection
+PASS IndexedDB and JSON preserve spatial celestial edits
+PASS reloading a lower celestial body restores the correct shell
+PASS upper hemisphere mirrors the body back above the horizon
+PASS reselecting a body focuses its actual hemisphere after undo
+PASS repeated sky switches do not accumulate GPU geometries
+FRAME {"width":1280,"height":720,"medianMs":17.600000143051147,"p95Ms":18.5,"drawCalls":13,"geometries":[82,82,82,82,82]}
+PASS shared celestial shaders compile
+PASS spatial sky editing also works on Aster
+ALL SPATIAL SKY CHECKS PASSED

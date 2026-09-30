@@ -1,0 +1,160 @@
+Running controlled browser integration scenario…
+PASS World disposed after texture decoding began, before asset loading settled
+PASS Disposed World.ready settles within 15 seconds
+PASS Disposal removes the loading world canvas
+PASS Second dispose during asset loading is harmless
+PASS Late decoded surface textures are released after cancellation
+PASS Cancelled loading does not instantiate a late speeder
+PASS Storm GPU relief matches CPU terrain across 240 samples (error 0.000002 m)
+PASS Real GLB hull clears slopes and crests during attitude changes (minimum 1.16 m)
+PASS Space flight resets terrain pitch and roll
+PASS Space coasting has no speed-generated exhaust
+PASS Actual reverse thrust fires both front engine sockets
+PASS Space stabilization fires the correct physical side nozzles
+PASS Free glide stops lateral correction and side exhaust immediately
+PASS Turning uses opposing front and rear side jets
+PASS Touch input reveals pads during active play
+PASS Independent fingers steer, hold gas and aim/mine simultaneously
+PASS Extra pointers cannot steal an occupied stick
+PASS Releasing held gas leaves both sticks active
+PASS Cancelled aim pointer stops the laser
+PASS Vertical steering-stick travel never selects gas or reverse
+PASS Relative steering travel is bounded
+PASS Lost capture releases steering
+PASS Gas double tap latches visibly after fingers release
+PASS Handbrake preserves latched gas for two-thumb drifting
+PASS Space changes the drift button to free glide
+PASS Normal brake cancels latched gas and emits one press edge
+PASS Held brake does not repeat its press edge
+PASS Touch brake stops and holds at rest
+PASS Continuing to hold brake never starts reverse
+PASS Releasing then pressing touch brake starts slow reverse
+PASS An extra finger cannot release a held brake
+PASS Cancelled brake releases input
+PASS A single tap on latched gas turns it off
+PASS Disabled unloading cannot queue a delivery
+PASS Touch unloading is a single press
+PASS Touch unloading delivers cargo through the simulation
+PASS resize clears gas latch, laser and handbrake
+PASS blur clears gas latch, laser and handbrake
+PASS Pause and resume never restore old controls
+PASS Gamepad handoff cancels latched touch gas
+PASS Gamepad left stick vertical travel has no pedal function
+PASS Gamepad RT, LT, A and horizontal left stick remain independent
+PASS Gamepad disconnect restores neutral touch controls
+PASS Keyboard takes over from touch
+PASS Touch handoff clears stale keyboard and latched gas
+PASS Space on a focused button remains button activation
+PASS Touching a paused game cannot activate flight controls
+PASS E produces one unload press
+PASS Held E does not repeat
+PASS Keyboard repeat does not unload
+PASS KeyX activates laser
+PASS KeyX releases laser
+PASS ShiftLeft activates laser
+PASS ShiftLeft releases laser
+PASS ShiftRight activates laser
+PASS ShiftRight releases laser
+PASS KeyS activates brake/reverse
+PASS KeyS holds at standstill
+PASS KeyS reverses after release and another press
+PASS KeyS releases brake/reverse
+PASS ArrowDown activates brake/reverse
+PASS ArrowDown holds at standstill
+PASS ArrowDown reverses after release and another press
+PASS ArrowDown releases brake/reverse
+PASS Space selects independent handbrake / free glide
+PASS Input clear cancels held and queued actions
+PASS Standard gamepad RB mines and Y unloads
+PASS Held gamepad Y does not repeat
+PASS Gamepad bumper release stops mining
+PASS Gamepad Y rearms after release
+PASS Gamepad LT preserves analog brake/reverse input
+
+LEVEL: aster
+PASS aster-vein-0: local beam extracts 12 requested units
+PASS ferrite: 12 units mined with keyboard laser
+PASS aster-vein-3: local beam extracts 12 requested units
+PASS ferrite: 12 units mined with keyboard laser
+PASS aster-vein-6: local beam extracts 6 requested units
+PASS ferrite: 6 units mined with keyboard laser
+PASS Cargo reaches 30 units
+PASS Onboard resources do not count as delivered
+PASS aster-vein-6: local beam extracts 1 requested units
+PASS Full cargo leaves mined fragments in the world
+PASS E outside loading zone cannot deliver
+PASS First delivery credits 30 ferrite
+PASS Leftover fragment is collected after unloading
+PASS aster-vein-1: local beam extracts 12 requested units
+PASS copper: 12 units mined with keyboard laser
+PASS aster-vein-4: local beam extracts 8 requested units
+PASS copper: 8 units mined with keyboard laser
+PASS aster-vein-2: local beam extracts 10 requested units
+PASS crystal: 10 units mined with keyboard laser
+PASS Second mixed load contains 20 copper and 10 crystals
+PASS All delivery objectives complete
+PASS All deliveries, including surplus, retained in ATLAS
+PASS aster-vein-2: local beam extracts 1 requested units
+PASS Continue mining and delivering after completion
+PASS Zero-time pause freezes gameplay
+
+LEVEL: belt
+PASS belt-vein-0: local beam extracts 12 requested units
+PASS ferrite: 12 units mined with keyboard laser
+PASS belt-vein-3: local beam extracts 12 requested units
+PASS ferrite: 12 units mined with keyboard laser
+PASS belt-vein-6: local beam extracts 6 requested units
+PASS ferrite: 6 units mined with keyboard laser
+PASS Cargo reaches 30 units
+PASS Onboard resources do not count as delivered
+PASS belt-vein-6: local beam extracts 1 requested units
+PASS Full cargo leaves mined fragments in the world
+PASS E outside loading zone cannot deliver
+PASS First delivery credits 30 ferrite
+PASS Leftover fragment is collected after unloading
+PASS belt-vein-1: local beam extracts 12 requested units
+PASS copper: 12 units mined with keyboard laser
+PASS belt-vein-4: local beam extracts 8 requested units
+PASS copper: 8 units mined with keyboard laser
+PASS belt-vein-2: local beam extracts 10 requested units
+PASS crystal: 10 units mined with keyboard laser
+PASS Second mixed load contains 20 copper and 10 crystals
+PASS All delivery objectives complete
+PASS All deliveries, including surplus, retained in ATLAS
+PASS belt-vein-2: local beam extracts 1 requested units
+PASS Continue mining and delivering after completion
+PASS Zero-time pause freezes gameplay
+PASS Aster walls stop the ship and cause impact damage
+PASS Moving asteroids collide with the ship
+PASS aster: no previous-level deposits
+PASS belt: no previous-level deposits
+PASS aster: no previous-level deposits
+PASS belt: no previous-level deposits
+PASS aster: no previous-level deposits
+PASS aster/high: GPU geometry and texture counts stable after switch (131/35, baseline 131/35)
+PASS belt: no previous-level deposits
+PASS belt/high: GPU geometry and texture counts stable after switch (92/34, baseline 92/34)
+PASS aster: no previous-level deposits
+PASS aster/standard: GPU geometry and texture counts stable after switch (131/31, baseline 131/31)
+PASS belt: no previous-level deposits
+PASS belt/standard: GPU geometry and texture counts stable after switch (92/30, baseline 92/30)
+PASS aster: no previous-level deposits
+PASS aster/high: GPU geometry and texture counts stable after switch (131/35, baseline 131/35)
+PASS belt: no previous-level deposits
+PASS belt/high: GPU geometry and texture counts stable after switch (92/34, baseline 92/34)
+PASS aster: no previous-level deposits
+PASS aster/standard: GPU geometry and texture counts stable after switch (131/31, baseline 131/31)
+PASS belt: no previous-level deposits
+PASS belt/standard: GPU geometry and texture counts stable after switch (92/30, baseline 92/30)
+PASS aster: no previous-level deposits
+PASS aster/high: GPU geometry and texture counts stable after switch (131/35, baseline 131/35)
+PASS belt: no previous-level deposits
+PASS belt/high: GPU geometry and texture counts stable after switch (92/34, baseline 92/34)
+PASS aster: no previous-level deposits
+PASS aster/standard: GPU geometry and texture counts stable after switch (131/31, baseline 131/31)
+PASS belt: no previous-level deposits
+PASS belt/standard: GPU geometry and texture counts stable after switch (92/30, baseline 92/30)
+Terrain aim: 0.12 ms/sample
+PASS Restart clears cargo, storage and mission
+
+ALL BROWSER CHECKS PASSED

@@ -5,40 +5,285 @@
   "forward": "-Z",
   "bounds": {
     "min": [
-      -5.52,
-      0.03,
-      -9.2
+      -10.55,
+      -3.5132,
+      -14.0
     ],
     "max": [
-      5.13,
-      6.4,
-      11.23
+      10.55,
+      8.26,
+      10.625
     ],
     "size": [
-      10.65,
-      6.37,
-      20.43
+      21.1,
+      11.7732,
+      24.625
     ]
   },
-  "mesh_count": 10,
+  "mesh_count": 53,
   "material_count": 10,
-  "triangle_count": 23424,
+  "triangle_count": 36396,
   "sockets": {
+    "bay_socket": [
+      0.0,
+      1.35,
+      1.0
+    ],
+    "brake_left": [
+      -6.0,
+      1.7,
+      -10.2
+    ],
+    "brake_right": [
+      6.0,
+      1.7,
+      -10.2
+    ],
+    "cruise_left": [
+      -6.0,
+      2.0,
+      10.02
+    ],
+    "cruise_right": [
+      6.0,
+      2.0,
+      10.02
+    ],
+    "exit_socket": [
+      0.0,
+      1.35,
+      10.0
+    ],
+    "foot_left_aft": [
+      -9.5,
+      -3.5,
+      6.0
+    ],
+    "foot_left_front": [
+      -9.5,
+      -3.5,
+      -8.0
+    ],
+    "foot_right_aft": [
+      9.5,
+      -3.5,
+      6.0
+    ],
+    "foot_right_front": [
+      9.5,
+      -3.5,
+      -8.0
+    ],
+    "hangar_door": [
+      0.0,
+      0.0,
+      10.12
+    ],
+    "hip_left_aft": [
+      -6.0,
+      1.0,
+      6.0
+    ],
+    "hip_left_front": [
+      -6.0,
+      1.0,
+      -8.0
+    ],
+    "hip_right_aft": [
+      6.0,
+      1.0,
+      6.0
+    ],
+    "hip_right_front": [
+      6.0,
+      1.0,
+      -8.0
+    ],
+    "knee_left_aft": [
+      -9.12,
+      0.29,
+      6.0
+    ],
+    "knee_left_front": [
+      -9.12,
+      0.29,
+      -8.0
+    ],
+    "knee_right_aft": [
+      9.12,
+      0.29,
+      6.0
+    ],
+    "knee_right_front": [
+      9.12,
+      0.29,
+      -8.0
+    ],
+    "lift_left_aft": [
+      -6.65,
+      -0.62,
+      5.5
+    ],
+    "lift_left_front": [
+      -6.65,
+      -0.62,
+      -5.5
+    ],
+    "lift_right_aft": [
+      6.65,
+      -0.62,
+      5.5
+    ],
+    "lift_right_front": [
+      6.65,
+      -0.62,
+      -5.5
+    ],
+    "lower_left_aft": [
+      -9.12,
+      0.29,
+      6.0
+    ],
+    "lower_left_front": [
+      -9.12,
+      0.29,
+      -8.0
+    ],
+    "lower_right_aft": [
+      9.12,
+      0.29,
+      6.0
+    ],
+    "lower_right_front": [
+      9.12,
+      0.29,
+      -8.0
+    ],
+    "piston_left_aft": [
+      -9.12,
+      0.29,
+      6.34
+    ],
+    "piston_left_front": [
+      -9.12,
+      0.29,
+      -7.66
+    ],
+    "piston_right_aft": [
+      9.12,
+      0.29,
+      6.34
+    ],
+    "piston_right_front": [
+      9.12,
+      0.29,
+      -7.66
+    ],
+    "ramp_hinge": [
+      0.0,
+      0.0,
+      10.4
+    ],
+    "ramp_section_0": [
+      0.0,
+      0.0,
+      -0.0
+    ],
+    "ramp_section_1": [
+      0.0,
+      -0.035,
+      -0.0
+    ],
+    "ramp_section_2": [
+      0.0,
+      -0.07,
+      -0.0
+    ],
+    "ramp_section_3": [
+      0.0,
+      -0.105,
+      -0.0
+    ],
     "loading_socket": [
       0.0,
-      0.22,
-      11.3
+      0.0,
+      5.0
+    ],
+    "upper_left_aft": [
+      -6.0,
+      1.0,
+      6.0
+    ],
+    "upper_left_front": [
+      -6.0,
+      1.0,
+      -8.0
+    ],
+    "upper_right_aft": [
+      6.0,
+      1.0,
+      6.0
+    ],
+    "upper_right_front": [
+      6.0,
+      1.0,
+      -8.0
     ],
     "worklight_left": [
-      -4.14,
-      4.88,
-      4.67
+      -4.4,
+      5.3,
+      10.4
     ],
     "worklight_right": [
-      4.14,
-      4.88,
-      4.67
+      4.4,
+      5.3,
+      10.4
     ]
   },
-  "socket_positions_are": "local to parent; laser_socket is relative to mining_turret"
+  "socket_parents": {
+    "bay_socket": "atlas",
+    "brake_left": "atlas",
+    "brake_right": "atlas",
+    "cruise_left": "atlas",
+    "cruise_right": "atlas",
+    "exit_socket": "atlas",
+    "foot_left_aft": "atlas",
+    "foot_left_front": "atlas",
+    "foot_right_aft": "atlas",
+    "foot_right_front": "atlas",
+    "hangar_door": "atlas",
+    "hip_left_aft": "atlas",
+    "hip_left_front": "atlas",
+    "hip_right_aft": "atlas",
+    "hip_right_front": "atlas",
+    "knee_left_aft": "atlas",
+    "knee_left_front": "atlas",
+    "knee_right_aft": "atlas",
+    "knee_right_front": "atlas",
+    "lift_left_aft": "atlas",
+    "lift_left_front": "atlas",
+    "lift_right_aft": "atlas",
+    "lift_right_front": "atlas",
+    "lower_left_aft": "atlas",
+    "lower_left_front": "atlas",
+    "lower_right_aft": "atlas",
+    "lower_right_front": "atlas",
+    "piston_left_aft": "atlas",
+    "piston_left_front": "atlas",
+    "piston_right_aft": "atlas",
+    "piston_right_front": "atlas",
+    "ramp_hinge": "atlas",
+    "ramp_section_0": "ramp_hinge",
+    "ramp_section_1": "ramp_hinge",
+    "ramp_section_2": "ramp_hinge",
+    "ramp_section_3": "ramp_hinge",
+    "loading_socket": "ramp_section_3",
+    "upper_left_aft": "atlas",
+    "upper_left_front": "atlas",
+    "upper_right_aft": "atlas",
+    "upper_right_front": "atlas",
+    "worklight_left": "atlas",
+    "worklight_right": "atlas"
+  },
+  "socket_positions_are": "local to the named socket_parents entry"
 }

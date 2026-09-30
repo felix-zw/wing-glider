@@ -6,6 +6,7 @@ import { advanceResources, createResourceState, unloadResources, type ResourceSt
 import { applyMissionEvent, createMissionProgress, type MissionProgress } from './missions';
 import { vehiclePose, vehicleLaserOrigin, type VehiclePose } from './vehicle-pose';
 import { motionState, flightSpeed, beginDriveInput, stepMotion, resetDrive, type MotionState } from './flight-motion';
+import { DEPLOY_SECONDS, deploymentActive, deploymentFrame, deploymentPhase, type DeploymentState } from './deployment';
 export { flightSpeed, forwardSpeed, sideSpeed, setVelocity, resetDrive } from './flight-motion';
 export { CONFIG } from './config';
 
@@ -21,14 +22,23 @@ export interface State extends Point, MotionState {
   levelId: LevelId; environment: { kind: 'planet' } | { kind: 'space'; asteroids: FlyingAsteroid[] };
   impactCooldown: number; lastDamage: 'storm' | 'wall' | 'asteroid' | null;
   surfacePose: (VehiclePose & { x: number; z: number; heading: number; elapsed: number }) | null;
+  deployment: DeploymentState | null;
 }
 export const neutralInput = (): FlightInput => ({ thrust: 0, brake: 0, brakePressed:false, handbrake:0, steer: 0, aim: null, mine: false, unloadPressed: false });
-export function createState(levelId: LevelId = 'aster'): State {
+export function createState(levelId: LevelId = 'aster', options: {arrival?:boolean} = {}): State {
   const world = getLevelWorld(levelId);
-  return { ...world.spawn, ...motionState(), heading: 0, turret: 0, get speed(){return flightSpeed(this);}, health: CONFIG.maxHealth,
+  const state:State = { ...world.spawn, ...motionState(), heading: 0, turret: 0, get speed(){return flightSpeed(this);}, health: CONFIG.maxHealth,
     phase: 'calm', phaseTime: 0, elapsed: 0, storms: 0, distance: 0, dead: false,
     resources: createResourceState(world), mission: createMissionProgress(), levelId, impactCooldown: 0, lastDamage: null, surfacePose: null,
-    environment: levelId === 'aster' ? { kind: 'planet' } : { kind: 'space', asteroids: createHazards(world) } };
+    deployment: options.arrival ? {time:0,phase:'arrival'} : null,
+    environment: world.definition.environment === 'planet' ? { kind: 'planet' } : { kind: 'space', asteroids: createHazards(world) } };
+  if(options.arrival)placeDeploymentPlayer(state);
+  return state;
+}
+function placeDeploymentPlayer(s:State) {
+  const p=deploymentFrame(getLevelWorld(s.levelId),s.deployment!.time).player;
+  s.x=p.x;s.z=p.z;s.heading=s.turret=p.heading;s.vx=p.vx;s.vz=p.vz;s.yawRate=0;
+  s.surfacePose={height:p.height,pitch:p.pitch,roll:p.roll,x:s.x,z:s.z,heading:s.heading,elapsed:s.elapsed};
 }
 export function phaseDuration(phase: Phase): number {
   return phase === 'calm' ? CONFIG.calmSeconds : phase === 'warning' ? CONFIG.warningSeconds : CONFIG.stormSeconds;
@@ -37,12 +47,14 @@ export const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.ma
 export function deadzone(n: number): number {
   return Math.abs(n) <= CONFIG.deadzone ? 0 : Math.sign(n) * (Math.abs(n) - CONFIG.deadzone) / (1 - CONFIG.deadzone);
 }
-export function nearestShelter(p: Point) {
-  return shelters.reduce((a, b) => Math.hypot(p.x - a.x, p.z - a.z) < Math.hypot(p.x - b.x, p.z - b.z) ? a : b);
+export function nearestShelter(p: Point & {levelId?:string}) {
+  const world=getLevelWorld(p.levelId);
+  return (world.shelters.length?world.shelters:[{...world.base,name:'ATLAS'}]).reduce((a, b) => Math.hypot(p.x - a.x, p.z - a.z) < Math.hypot(p.x - b.x, p.z - b.z) ? a : b);
 }
 export function isProtected(p: Point & { levelId?: LevelId }): boolean {
-  if (p.levelId === 'belt') return Math.hypot(p.x, p.z) <= SPACE.shieldRadius;
-  return shelters.some(s => Math.hypot(p.x - s.x, p.z - s.z) <= s.radius);
+  const world=getLevelWorld(p.levelId);
+  if (world.definition.environment === 'space') return Math.hypot(p.x-world.base.x,p.z-world.base.z) <= SPACE.shieldRadius;
+  return world.shelters.some(s => Math.hypot(p.x - s.x, p.z - s.z) <= s.radius);
 }
 
 // Both rendering and flight sample this deterministic height field.
@@ -51,11 +63,21 @@ export const terrainHeight = (x: number, z: number, levelId: LevelId = 'aster') 
 // Fixed substeps make phase boundaries, damage and motion independent of render rate.
 export function advance(s: State, input: FlightInput, seconds: number): void {
   let remaining = Math.max(0, seconds);
+  if(deploymentActive(s.deployment)) {
+    if(remaining===0||s.dead)return;
+    const consumed=Math.min(remaining,DEPLOY_SECONDS-s.deployment!.time);
+    s.deployment!.time=Math.min(DEPLOY_SECONDS,s.deployment!.time+consumed);
+    if(DEPLOY_SECONDS-s.deployment!.time<1e-9)s.deployment!.time=DEPLOY_SECONDS;
+    s.deployment!.phase=deploymentPhase(s.deployment!.time);
+    placeDeploymentPlayer(s);remaining=Math.max(0,remaining-consumed);
+    if(deploymentActive(s.deployment)||remaining<1e-9)return;
+    resetDrive(s);input=neutralInput();
+  }
   const world = getLevelWorld(s.levelId);
   const height = (x: number, z: number) => groundHeight(world, x, z);
   const emit = (event: ResourceEvent) => applyMissionEvent(world.definition.mission, s.mission, event, s.elapsed);
   if(remaining>1e-9&&!s.dead)beginDriveInput(s,input);
-  if (remaining > 1e-9 && !s.dead && input.unloadPressed) unloadResources(s.resources, s, emit);
+  if (remaining > 1e-9 && !s.dead && input.unloadPressed) unloadResources(s.resources, s, emit,world);
   while (remaining > 1e-9 && !s.dead) {
     const dt = Math.min(remaining, 1 / 120, s.environment.kind === 'planet' ? phaseDuration(s.phase) - s.phaseTime : Infinity);
     remaining -= dt;
@@ -69,17 +91,17 @@ export function advance(s: State, input: FlightInput, seconds: number): void {
     const oldX = s.x, oldZ = s.z;
     const nextX = s.x + s.vx * dt;
     const nextZ = s.z + s.vz * dt;
-    s.x = clamp(nextX, -CONFIG.worldHalf + 3, CONFIG.worldHalf - 3);
-    s.z = clamp(nextZ, -CONFIG.worldHalf + 3, CONFIG.worldHalf - 3);
+    s.x = clamp(nextX, -world.bounds + 3, world.bounds - 3);
+    s.z = clamp(nextZ, -world.bounds + 3, world.bounds - 3);
     const movement = moveOutside({ x: oldX, z: oldZ }, s, world.solids, COLLISION.shipRadius);
     s.x = movement.position.x; s.z = movement.position.z;
     if (movement.contact) {
       const {nx,nz}=movement.contact, inward=s.vx*nx+s.vz*nz;
-      if(inward<0){impact(s,-inward,s.levelId==='aster'?'wall':'asteroid');s.vx-=inward*nx;s.vz-=inward*nz;}
+      if(inward<0){impact(s,-inward,world.definition.environment==='planet'?'wall':'asteroid');s.vx-=inward*nx;s.vz-=inward*nz;}
     }
     if (s.environment.kind === 'space') advanceHazards(s.environment.asteroids, world, s, { x: oldX, z: oldZ }, dt);
-    if((s.x>=CONFIG.worldHalf-3&&s.vx>0)||(s.x<=-CONFIG.worldHalf+3&&s.vx<0))s.vx=0;
-    if((s.z>=CONFIG.worldHalf-3&&s.vz>0)||(s.z<=-CONFIG.worldHalf+3&&s.vz<0))s.vz=0;
+    if((s.x>=world.bounds-3&&s.vx>0)||(s.x<=-world.bounds+3&&s.vx<0))s.vx=0;
+    if((s.z>=world.bounds-3&&s.vz>0)||(s.z<=-world.bounds+3&&s.vz<0))s.vz=0;
     s.distance += Math.hypot(s.x - oldX, s.z - oldZ);
     if (s.environment.kind === 'planet' && s.phase === 'storm' && !isProtected(s)) { s.health = Math.max(0, s.health - CONFIG.stormDamage * dt); s.lastDamage = 'storm'; }
     s.elapsed += dt;

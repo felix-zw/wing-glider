@@ -1,0 +1,287 @@
+PASS aster/high 0s ATLAS ground clearance 19.251m (foot_right_front__graphite @ 7.56,27.18,-28.74)
+PASS aster/high 0s Speeder clearance 21.942m (speeder__graphite @ -2.37,28.89,-24.54)
+PASS paused render leaves transforms and simulation frozen
+PASS aster/high 0.5s ATLAS ground clearance 17.121m (foot_right_front__graphite @ 7.67,25.06,-28.74)
+PASS aster/high 0.5s Speeder clearance 20.070m (speeder__graphite @ -2.37,27.01,-24.54)
+PASS paused render leaves transforms and simulation frozen
+PASS aster/high 1s ATLAS ground clearance 9.415m (foot_right_front__graphite @ 9.01,17.46,-28.74)
+PASS aster/high 1s Speeder clearance 15.606m (speeder__graphite @ -2.37,22.55,-24.54)
+PASS deployment audio is active
+PASS pause mutes deployment audio
+PASS paused render leaves transforms and simulation frozen
+PASS aster/high 1.5s ATLAS ground clearance 0.828m (foot_right_front__graphite @ 8.44,8.83,-28.74)
+PASS aster/high 1.5s Speeder clearance 10.278m (speeder__graphite @ -2.37,17.22,-24.54)
+PASS paused render leaves transforms and simulation frozen
+PASS aster/high 2s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/high 2s Speeder clearance 5.901m (speeder__graphite @ -2.37,12.85,-24.54)
+PASS paused render leaves transforms and simulation frozen
+PASS aster/high 2.25s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/high 2.25s Speeder clearance 4.568m (speeder__graphite @ -2.37,11.51,-24.54)
+PASS paused render leaves transforms and simulation frozen
+PASS aster/high 2.5s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/high 2.5s Speeder clearance 3.942m (speeder__graphite @ -2.37,10.89,-24.54)
+PASS 2.5s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS aster/high 3s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/high 3s Speeder clearance 3.942m (speeder__graphite @ -2.37,10.89,-24.54)
+PASS 3s entire speeder clears the hangar walls and ceiling
+PASS deployment audio is active
+PASS pause mutes deployment audio
+PASS paused render leaves transforms and simulation frozen
+PASS aster/high 3.5s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/high 3.5s Speeder clearance 3.942m (speeder__graphite @ -2.37,10.89,-24.54)
+PASS 3.5s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS aster/high 3.75s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/high 3.75s Speeder clearance 3.942m (speeder__graphite @ -2.37,10.89,-24.54)
+PASS 3.75s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS aster/high 4s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/high 4s Speeder clearance 0.890m (speeder__warm_ivory @ 2.37,10.72,-18.79)
+PASS 4s entire speeder clears the hangar walls and ceiling
+PASS open hangar clears the complete speeder
+PASS paused render leaves transforms and simulation frozen
+PASS aster/high 4.25s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/high 4.25s Speeder clearance 0.890m (speeder__warm_ivory @ 2.37,10.72,-18.46)
+PASS 4.25s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS aster/high 4.5s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/high 4.5s Speeder clearance 0.890m (speeder__warm_ivory @ 2.37,10.72,-17.54)
+PASS 4.5s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS aster/high 5s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/high 5s Speeder clearance 0.890m (speeder__warm_ivory @ 2.37,10.72,-14.26)
+PASS 5s entire speeder clears the hangar walls and ceiling
+PASS deployment audio is active
+PASS pause mutes deployment audio
+PASS paused render leaves transforms and simulation frozen
+PASS aster/high 5.5s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/high 5.5s Speeder clearance 0.840m (speeder__graphite @ -0.70,10.62,-11.93)
+PASS 5.5s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS aster/high 6s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/high 6s Speeder clearance 0.796m (speeder__warm_ivory @ 2.37,5.88,-4.92)
+PASS 6s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS aster/high 6.5s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/high 6.5s Speeder clearance 0.922m (speeder__graphite @ -0.08,2.42,2.54)
+PASS 6.5s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS aster/high 7s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/high 7s Speeder clearance 1.199m (speeder__warm_ivory @ 2.37,2.70,5.65)
+PASS paused render leaves transforms and simulation frozen
+PASS aster/high 7.5s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/high 7.5s Speeder clearance 1.872m (speeder__warm_ivory @ 2.37,3.37,8.96)
+PASS paused render leaves transforms and simulation frozen
+PASS aster/high 8s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/high 8s Speeder clearance 1.940m (speeder__warm_ivory @ 2.37,3.44,10.21)
+PASS paused render leaves transforms and simulation frozen
+PASS aster/high start has no gameplay cost
+Minimum terrain clearance: ATLAS 0.028 m, Speeder 0.796 m
+PASS aster/standard 0s ATLAS ground clearance 19.251m (foot_right_front__graphite @ 7.56,27.18,-28.74)
+PASS aster/standard 0s Speeder clearance 21.942m (speeder__graphite @ -2.37,28.89,-24.54)
+PASS paused render leaves transforms and simulation frozen
+PASS aster/standard 0.5s ATLAS ground clearance 17.121m (foot_right_front__graphite @ 7.67,25.06,-28.74)
+PASS aster/standard 0.5s Speeder clearance 20.070m (speeder__graphite @ -2.37,27.01,-24.54)
+PASS paused render leaves transforms and simulation frozen
+PASS aster/standard 1s ATLAS ground clearance 9.415m (foot_right_front__graphite @ 9.01,17.46,-28.74)
+PASS aster/standard 1s Speeder clearance 15.606m (speeder__graphite @ -2.37,22.55,-24.54)
+PASS deployment audio is active
+PASS pause mutes deployment audio
+PASS paused render leaves transforms and simulation frozen
+PASS aster/standard 1.5s ATLAS ground clearance 0.828m (foot_right_front__graphite @ 8.44,8.83,-28.74)
+PASS aster/standard 1.5s Speeder clearance 10.278m (speeder__graphite @ -2.37,17.22,-24.54)
+PASS paused render leaves transforms and simulation frozen
+PASS aster/standard 2s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/standard 2s Speeder clearance 5.901m (speeder__graphite @ -2.37,12.85,-24.54)
+PASS paused render leaves transforms and simulation frozen
+PASS aster/standard 2.25s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/standard 2.25s Speeder clearance 4.568m (speeder__graphite @ -2.37,11.51,-24.54)
+PASS paused render leaves transforms and simulation frozen
+PASS aster/standard 2.5s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/standard 2.5s Speeder clearance 3.942m (speeder__graphite @ -2.37,10.89,-24.54)
+PASS 2.5s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS aster/standard 3s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/standard 3s Speeder clearance 3.942m (speeder__graphite @ -2.37,10.89,-24.54)
+PASS 3s entire speeder clears the hangar walls and ceiling
+PASS deployment audio is active
+PASS pause mutes deployment audio
+PASS paused render leaves transforms and simulation frozen
+PASS aster/standard 3.5s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/standard 3.5s Speeder clearance 3.942m (speeder__graphite @ -2.37,10.89,-24.54)
+PASS 3.5s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS aster/standard 3.75s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/standard 3.75s Speeder clearance 3.942m (speeder__graphite @ -2.37,10.89,-24.54)
+PASS 3.75s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS aster/standard 4s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/standard 4s Speeder clearance 0.890m (speeder__warm_ivory @ 2.37,10.72,-18.79)
+PASS 4s entire speeder clears the hangar walls and ceiling
+PASS open hangar clears the complete speeder
+PASS paused render leaves transforms and simulation frozen
+PASS aster/standard 4.25s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/standard 4.25s Speeder clearance 0.890m (speeder__warm_ivory @ 2.37,10.72,-18.46)
+PASS 4.25s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS aster/standard 4.5s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/standard 4.5s Speeder clearance 0.890m (speeder__warm_ivory @ 2.37,10.72,-17.54)
+PASS 4.5s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS aster/standard 5s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/standard 5s Speeder clearance 0.890m (speeder__warm_ivory @ 2.37,10.72,-14.26)
+PASS 5s entire speeder clears the hangar walls and ceiling
+PASS deployment audio is active
+PASS pause mutes deployment audio
+PASS paused render leaves transforms and simulation frozen
+PASS aster/standard 5.5s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/standard 5.5s Speeder clearance 0.840m (speeder__graphite @ -0.70,10.62,-11.93)
+PASS 5.5s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS aster/standard 6s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/standard 6s Speeder clearance 0.796m (speeder__warm_ivory @ 2.37,5.88,-4.92)
+PASS 6s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS aster/standard 6.5s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/standard 6.5s Speeder clearance 0.922m (speeder__graphite @ -0.08,2.42,2.54)
+PASS 6.5s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS aster/standard 7s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/standard 7s Speeder clearance 1.199m (speeder__warm_ivory @ 2.37,2.70,5.65)
+PASS paused render leaves transforms and simulation frozen
+PASS aster/standard 7.5s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/standard 7.5s Speeder clearance 1.872m (speeder__warm_ivory @ 2.37,3.37,8.96)
+PASS paused render leaves transforms and simulation frozen
+PASS aster/standard 8s ATLAS ground clearance 0.028m (foot_right_front__graphite @ 8.54,8.03,-28.74)
+PASS aster/standard 8s Speeder clearance 1.940m (speeder__warm_ivory @ 2.37,3.44,10.21)
+PASS paused render leaves transforms and simulation frozen
+PASS aster/standard start has no gameplay cost
+Minimum terrain clearance: ATLAS 0.028 m, Speeder 0.796 m
+PASS space 0s has no ground dust
+PASS paused render leaves transforms and simulation frozen
+PASS space 0.5s has no ground dust
+PASS paused render leaves transforms and simulation frozen
+PASS space 1s has no ground dust
+PASS deployment audio is active
+PASS pause mutes deployment audio
+PASS paused render leaves transforms and simulation frozen
+PASS space 1.5s has no ground dust
+PASS paused render leaves transforms and simulation frozen
+PASS space 2s has no ground dust
+PASS paused render leaves transforms and simulation frozen
+PASS space 2.25s has no ground dust
+PASS paused render leaves transforms and simulation frozen
+PASS space 2.5s has no ground dust
+PASS 2.5s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS space 3s has no ground dust
+PASS 3s entire speeder clears the hangar walls and ceiling
+PASS deployment audio is active
+PASS pause mutes deployment audio
+PASS paused render leaves transforms and simulation frozen
+PASS space 3.5s has no ground dust
+PASS 3.5s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS space 3.75s has no ground dust
+PASS 3.75s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS space 4s has no ground dust
+PASS 4s entire speeder clears the hangar walls and ceiling
+PASS open hangar clears the complete speeder
+PASS paused render leaves transforms and simulation frozen
+PASS space 4.25s has no ground dust
+PASS 4.25s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS space 4.5s has no ground dust
+PASS 4.5s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS space 5s has no ground dust
+PASS 5s entire speeder clears the hangar walls and ceiling
+PASS deployment audio is active
+PASS pause mutes deployment audio
+PASS paused render leaves transforms and simulation frozen
+PASS space 5.5s has no ground dust
+PASS 5.5s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS space 6s has no ground dust
+PASS 6s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS space 6.5s has no ground dust
+PASS 6.5s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS space 7s has no ground dust
+PASS paused render leaves transforms and simulation frozen
+PASS space 7.5s has no ground dust
+PASS paused render leaves transforms and simulation frozen
+PASS space 8s has no ground dust
+PASS paused render leaves transforms and simulation frozen
+PASS belt/high start has no gameplay cost
+PASS space 0s has no ground dust
+PASS paused render leaves transforms and simulation frozen
+PASS space 0.5s has no ground dust
+PASS paused render leaves transforms and simulation frozen
+PASS space 1s has no ground dust
+PASS deployment audio is active
+PASS pause mutes deployment audio
+PASS paused render leaves transforms and simulation frozen
+PASS space 1.5s has no ground dust
+PASS paused render leaves transforms and simulation frozen
+PASS space 2s has no ground dust
+PASS paused render leaves transforms and simulation frozen
+PASS space 2.25s has no ground dust
+PASS paused render leaves transforms and simulation frozen
+PASS space 2.5s has no ground dust
+PASS 2.5s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS space 3s has no ground dust
+PASS 3s entire speeder clears the hangar walls and ceiling
+PASS deployment audio is active
+PASS pause mutes deployment audio
+PASS paused render leaves transforms and simulation frozen
+PASS space 3.5s has no ground dust
+PASS 3.5s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS space 3.75s has no ground dust
+PASS 3.75s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS space 4s has no ground dust
+PASS 4s entire speeder clears the hangar walls and ceiling
+PASS open hangar clears the complete speeder
+PASS paused render leaves transforms and simulation frozen
+PASS space 4.25s has no ground dust
+PASS 4.25s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS space 4.5s has no ground dust
+PASS 4.5s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS space 5s has no ground dust
+PASS 5s entire speeder clears the hangar walls and ceiling
+PASS deployment audio is active
+PASS pause mutes deployment audio
+PASS paused render leaves transforms and simulation frozen
+PASS space 5.5s has no ground dust
+PASS 5.5s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS space 6s has no ground dust
+PASS 6s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS space 6.5s has no ground dust
+PASS 6.5s entire speeder clears the hangar walls and ceiling
+PASS paused render leaves transforms and simulation frozen
+PASS space 7s has no ground dust
+PASS paused render leaves transforms and simulation frozen
+PASS space 7.5s has no ground dust
+PASS paused render leaves transforms and simulation frozen
+PASS space 8s has no ground dust
+PASS paused render leaves transforms and simulation frozen
+PASS belt/standard start has no gameplay cost
+PASS ATLAS resources stable aster/high
+PASS ATLAS resources stable belt/high
+PASS ATLAS resources stable aster/standard
+PASS ATLAS resources stable belt/standard
+PASS ATLAS resources stable aster/high
+PASS ATLAS resources stable belt/high
+PASS ATLAS resources stable aster/standard
+PASS ATLAS resources stable belt/standard
+ALL ATLAS CHECKS PASSED

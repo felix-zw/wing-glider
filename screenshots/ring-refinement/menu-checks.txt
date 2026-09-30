@@ -1,0 +1,9 @@
+Level selection integration
+PASS both built-in levels expose independent Edit actions beside Start
+PASS edit actions are separate buttons, not nested inside Start
+PASS editing the built-in belt creates a local editable space draft
+PASS saved levels offer both Start and Edit in the regular level selection
+PASS reopening a saved level edits that document without creating another draft
+PASS changes survive closing and reopening from the same level card
+PASS Aster opens its own planet layout and asset palette
+ALL LEVEL MENU CHECKS PASSED

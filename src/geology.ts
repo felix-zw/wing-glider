@@ -5,10 +5,11 @@ export type Cliff = Extract<Solid, { kind: 'cliff' }>;
 /** The two sides of each canyon expose a common ridge. Positive across points
  * into the canyon; the wide backslope faces away from its navigable floor. */
 export function cliffFacing(cliff: Cliff) {
-  return Number(cliff.id.split('-').at(-1)) % 2 === 0 ? 1 : -1;
+  return cliff.facing??(Number(cliff.id.split('-').at(-1)) % 2 === 0 ? 1 : -1);
 }
 
 export function cliffUplift(cliff: Cliff, x: number, z: number) {
+  const dx=x-cliff.x,dz=z-cliff.z,c=Math.cos(cliff.rotation??0),n=Math.sin(cliff.rotation??0);x=cliff.x+dx*c+dz*n;z=cliff.z-dx*n+dz*c;
   const vertical = cliff.halfX < cliff.halfZ;
   const along = vertical ? z - cliff.z : x - cliff.x;
   const across = (vertical ? x - cliff.x : z - cliff.z) * cliffFacing(cliff);
@@ -29,8 +30,8 @@ export function bedrockUplift(world: LevelWorld, x: number, z: number) {
 /** GPU counterpart, used by terrain-following storm dust. Browser integration
  * compares this function against cliffUplift at canyon faces and outer slopes. */
 export const cliffUpliftGLSL = /* glsl */`
-float cliffUplift(vec4 cliff, vec2 shape, vec2 p) {
-  vec2 offset=p-cliff.xy;
+float cliffUplift(vec4 cliff, vec3 shape, vec2 p) {
+  vec2 delta=p-cliff.xy;vec2 offset=vec2(delta.x*cos(shape.z)+delta.y*sin(shape.z),-delta.x*sin(shape.z)+delta.y*cos(shape.z));
   float along=cliff.z<cliff.w?offset.y:offset.x;
   float across=(cliff.z<cliff.w?offset.x:offset.y)*shape.y;
   float length=max(cliff.z,cliff.w)+32.0;

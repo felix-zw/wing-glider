@@ -1,0 +1,29 @@
+30.09.2026 · Planet atmosphere and editor launch
+
+npm test: 134 passed, 0 failed.
+npm run build: TypeScript and Vite succeeded. Existing large-chunk advisory remains.
+git diff --check: succeeded (Windows line-ending notices only).
+
+Browser fixtures:
+- Atmosphere: 15 passed, in 1280×720 and verified 1920×1080.
+- Main level menu: 12 passed; selected belt and Aster editing, save/reopen,
+  invalid initial build recovery, subsequent valid editing and lazy saved Start.
+- Existing celestial regression: 37 passed; solar corona, rings, undo,
+  persistence, preview, play return and Aster. No WebGL errors.
+- Production build opened separately: belt Edit enters editor, menu hidden,
+  new planet exposes atmosphere height controls, no console errors.
+
+1080p atmosphere scene:
+High: median 17.7 ms, p95 18.6 ms, 227 draw calls.
+Standard: median 17.5 ms, p95 18.3 ms, 117 draw calls.
+Geometry memory across five overview/preview switches: [93,93,93,93,93].
+About 57 FPS in this browser; the 60-FPS target is not confirmed.
+
+Visual inspection: blue haze fades outward and around the night side;
+sunlit limb is brighter. Height, strength and color are visible in the panel.
+
+Remote Vivaldi failure has not been reproduced. Opening the supplied site
+redirected to a separate Cloudflare Access login domain. Automatic approval
+review denied access to that domain. No login or deployment performed.
+Local web container was healthy and served the previous built asset bundle.
+The changes in this report are local and are not yet deployed to the site.

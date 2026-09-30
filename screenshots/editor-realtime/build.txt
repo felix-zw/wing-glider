@@ -1,0 +1,21 @@
+npm notice run wing-glider@0.1.0 npx
+npm notice run vite build --configLoader runner
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 84 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                  0.56 kB │ gzip:   0.34 kB
+dist/assets/sculpt-worker-BrKyj15H.js           20.39 kB
+dist/assets/generator-worker-Db2xEXYy.js        24.95 kB
+dist/assets/editor-storage-worker-_KP9hNWD.js   63.37 kB
+dist/assets/editor-world-worker-CytblaBg.js    110.69 kB
+dist/assets/index-CSY5-DRP.css                  40.86 kB │ gzip:   9.50 kB
+dist/assets/three-B50Dm664.js                  544.70 kB │ gzip: 137.89 kB
+dist/assets/index-wuQhUhDE.js                  601.74 kB │ gzip: 216.55 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.03s

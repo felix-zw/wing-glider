@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {createPaintedOre} from './painted-ore';
 import type { AssetLibrary } from './assets';
 import { groundHeight, seededRandom, type LevelWorld } from './levels';
 import { RESOURCES, type Deposit } from './resources';
@@ -53,8 +54,9 @@ export function crystalGeometry() {
  * mineral fissures and rooted clusters participate in the depletion animation. */
 export function createOreOutcrop(world: LevelWorld, assets: AssetLibrary, d: Deposit,
   mineralGeometry: THREE.BufferGeometry, mineralMaterial: THREE.MeshStandardMaterial) {
+  if(d.surface?.cells)return createPaintedOre(d,mineralGeometry,mineralMaterial);
   const surface=d.surface!, ground=surface.kind==='ground';
-  const seed=world.definition.seed+Number(d.id.split('-').at(-1))*313, random=seededRandom(seed);
+  const seed=world.definition.seed+(Number.isFinite(Number(d.id.split('-').at(-1)))?Number(d.id.split('-').at(-1)):Array.from(d.id).reduce((h,c)=>Math.imul(h,31)+c.charCodeAt(0)|0,0))*313, random=seededRandom(seed);
   const normal=new THREE.Vector3(surface.nx,0,surface.nz), up=new THREE.Vector3(0,1,0);
   const lobes=[{u:-.58,v:(random()-.5)*.45},{u:0,v:(random()-.5)*.35},{u:.57,v:(random()-.5)*.45}];
   const path=(u:number)=>Math.sin(u*5.3+seed)*.13+Math.sin(u*11.7+seed*.2)*.07;
@@ -63,6 +65,7 @@ export function createOreOutcrop(world: LevelWorld, assets: AssetLibrary, d: Dep
     for(const lobe of lobes) height=Math.max(height,Math.exp(-((u-lobe.u)**2/.14+(v-lobe.v)**2/.32)));
     return .045+height*(ground?.15:.28);
   };
+  const hostSolid=world.solids.find(s=>s.id===d.structureId);
   const point: SurfacePoint=(u,v,lift=0)=>{
     const along=u*surface.width*.5, outward=ground?v*2.1:0;
     const x=d.x-surface.nz*along+surface.nx*outward, z=d.z+surface.nx*along+surface.nz*outward;
@@ -70,7 +73,7 @@ export function createOreOutcrop(world: LevelWorld, assets: AssetLibrary, d: Dep
     const p=new THREE.Vector3(x,ground?groundHeight(world,x,z)+.035:base+.28+(v+1)*2.1,z);
     return p.addScaledVector(ground?terrainNormal(world,x,z):normal,lift);
   };
-  const host=new THREE.Color(ground?'#a49b80':world.definition.environment==='space'?'#8b99a7':'#cbbda4');
+  const host=new THREE.Color(ground?'#a49b80':world.definition.environment==='space'?world.theme.rockTint:'#cbbda4');
   const oxide=new THREE.Color(d.resource==='copper'?'#79614a':d.resource==='crystal'?'#626d62':'#646e6b');
   const bed=new SurfaceGeometry(ground), stain=new SurfaceGeometry(ground,true), seam=new SurfaceGeometry(ground);
   // Feathered mineral dust connects the outcrop to the surrounding soil/facet.

@@ -1,0 +1,9 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ATLAS · Landung und Ausstieg</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#07141c;color:#e3e9dd;font:13px system-ui}#viewport{width:100vw;height:100vh}canvas{display:block}#panel{position:fixed;left:16px;top:16px;max-width:370px;padding:16px;background:#07141cee;border:1px solid #ad947866;border-radius:8px;max-height:90vh;overflow:auto}button,select{background:#253c43;color:#e3e9dd;border:1px solid #627573;padding:7px;margin:3px;font:inherit}h1{font-size:16px;margin:0 0 10px}#results{white-space:pre-wrap;font:11px/1.5 monospace;max-height:230px;overflow:auto}#status{color:#efc67f}#time{width:100%}#show{position:fixed;right:14px;top:14px}a{color:#96e7d3}</style></head><body>
+<div id="viewport"></div><section id="panel"><h1>ATLAS / Landung und Ausstieg</h1>
+<div><button id="aster">Aster</button><button id="belt">Weltraum</button><button id="play">Abspielen</button></div>
+<div><button data-time="0">Anflug</button><button data-time="2.5">Bodenkontakt</button><button data-time="4">Hangar offen</button><button data-time="6">Ausstieg</button><button data-time="8">Spielbereit</button></div>
+<label>Zeit <input id="time" type="range" min="0" max="8" step="0.01" value="0"></label>
+<label>Qualität <select id="quality"><option value="high">Hoch</option><option value="standard">Standard</option></select></label>
+<label><input id="side" type="checkbox">Seitliche Prüfansicht</label><div><button id="checks">Geometrie und Ablauf prüfen</button><button id="hide">Panel ausblenden</button></div>
+<p id="status" role="status">Modelle werden geladen…</p><pre id="results"></pre><a href="/">Zum Spiel</a></section><button id="show" hidden>Prüfpanel anzeigen</button><script type="module" src="./atlas.ts"></script></body></html>

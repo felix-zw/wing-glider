@@ -1,0 +1,20 @@
+Planet atmosphere integration
+PASS atmosphere height, strength and color are exposed in planet properties
+PASS percentage height updates the real shell immediately
+PASS atmosphere editing preserves body size, distance and global light
+PASS atmosphere undo restores exact settings
+PASS atmosphere redo restores height
+PASS strength and independent scattering color update existing material
+PASS Standard reduces integration samples without reallocating the shell
+PASS High restores atmospheric integration detail
+PASS disabling atmosphere removes its entire shell
+PASS duplicated atmosphere settings are independent
+PASS editing a duplicate leaves the original atmosphere unchanged
+PASS IndexedDB and JSON retain complete atmosphere settings
+PASS atmosphere uses the actual stationary gameplay camera and postprocessing
+PASS overview and preview switches retain a stable geometry count
+MEMORY [93,93,93,93,93]
+FRAME {"quality":"high","width":1280,"height":720,"medianMs":17.600000143051147,"p95Ms":18.5,"calls":227,"memory":{"geometries":93,"textures":32}}
+FRAME {"quality":"standard","width":1280,"height":720,"medianMs":17.59999990463257,"p95Ms":18.799999952316284,"calls":117,"memory":{"geometries":93,"textures":28}}
+PASS atmosphere and unchanged solar shaders compile on real WebGL
+ALL ATMOSPHERE CHECKS PASSED

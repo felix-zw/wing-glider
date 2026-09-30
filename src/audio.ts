@@ -1,6 +1,8 @@
 import type { FlightInput, State } from './simulation';
 import { CONFIG } from './config';
 import { RESOURCE_TYPES, type Inventory, type ResourceId, type ResourceState } from './resources';
+import { deploymentActive, deploymentFrame } from './deployment';
+import { getLevelWorld } from './levels';
 
 export type SoundKind = 'break' | 'collect' | 'unload';
 export type AudioPreview = SoundKind | 'flight' | 'laser' | 'desert';
@@ -48,7 +50,7 @@ export class AudioEventTracker {
 }
 
 interface Voice { sources: AudioScheduledSourceNode[]; nodes: AudioNode[]; gain: GainNode; ended: number }
-interface LoopTargets { flight: number; laser: number; desert: number }
+interface LoopTargets { flight: number; laser: number; desert: number; atlas: number; hydraulic: number }
 
 /** One graph for the application lifetime. Every source and connection is owned
  * explicitly; short events are capped and disconnect themselves when complete. */
@@ -58,13 +60,16 @@ class SoundGraph {
   readonly flight: GainNode;
   readonly laser: GainNode;
   readonly desert: GainNode;
+  readonly atlas: GainNode;
+  readonly hydraulic: GainNode;
+  readonly hydraulicMotor: OscillatorNode;
   readonly engineFundamental: OscillatorNode;
   readonly engineHarmonic: OscillatorNode;
   readonly engineFilter: BiquadFilterNode;
   readonly laserCarrier: OscillatorNode;
   readonly laserFilter: BiquadFilterNode;
   readonly windFilter: BiquadFilterNode;
-  readonly targets: LoopTargets = { flight: 0, laser: 0, desert: 0 };
+  readonly targets: LoopTargets = { flight: 0, laser: 0, desert: 0, atlas:0, hydraulic:0 };
   readonly played: Record<SoundKind, number> = { break: 0, collect: 0, unload: 0 };
   readonly voices = new Set<Voice>();
   private nodes = new Set<AudioNode>();
@@ -113,6 +118,12 @@ class SoundGraph {
     this.loopNoise(this.windFilter, .9);
     this.oscillator('sine', .115, .17, windBreath.gain);
     this.oscillator('sine', .071, 145, this.windFilter.frequency);
+    this.atlas=this.gain(0);this.atlas.connect(this.bus);
+    const engine=this.filter('lowpass',230,.6);engine.connect(this.atlas);
+    this.loopNoise(engine,.5);this.oscillator('sine',37,.65,this.atlas);this.oscillator('triangle',74,.12,engine);
+    this.hydraulic=this.gain(0);this.hydraulic.connect(this.bus);
+    const motor=this.filter('bandpass',540,1.2);motor.connect(this.hydraulic);this.loopNoise(motor,.3);
+    this.hydraulicMotor=this.oscillator('triangle',125,.32,this.hydraulic);
   }
   private keep<T extends AudioNode>(node: T): T { this.nodes.add(node); return node; }
   private gain(value: number) { const node = this.keep(this.context.createGain()); node.gain.value = value; return node; }
@@ -134,18 +145,24 @@ class SoundGraph {
   }
   setActive(active: boolean) {
     this.smooth(this.gate.gain, active ? 1 : 0, .018);
-    if (!active) { this.setLoops(0, 0, 0); this.stopVoices(); }
+    if (!active) { this.setLoops(0, 0, 0); this.setDeployment(0,0); this.stopVoices(); }
   }
   setLoops(flight: number, laser: number, desert: number) {
     this.targets.flight = flight; this.targets.laser = laser; this.targets.desert = desert;
     this.smooth(this.flight.gain, flight, .075); this.smooth(this.laser.gain, laser, laser ? .025 : .035); this.smooth(this.desert.gain, desert, .7);
   }
+  setDeployment(engine:number,mechanism:number) {
+    this.targets.atlas=engine;this.targets.hydraulic=mechanism;
+    this.smooth(this.atlas.gain,engine,.045);this.smooth(this.hydraulic.gain,mechanism,.025);
+    this.smooth(this.hydraulicMotor.frequency,105+mechanism*350,.08);
+  }
   reset() {
     this.stopVoices(true);
-    for (const gain of [this.gate, this.flight, this.laser, this.desert]) {
+    for (const gain of [this.gate, this.flight, this.laser, this.desert, this.atlas, this.hydraulic]) {
       gain.gain.cancelScheduledValues(this.context.currentTime); gain.gain.setValueAtTime(0, this.context.currentTime);
     }
     this.targets.flight = this.targets.laser = this.targets.desert = 0;
+    this.targets.atlas=this.targets.hydraulic=0;
   }
   play(event: SoundEvent, at = this.context.currentTime) {
     if (this.disposed || this.voices.size >= 24) return;
@@ -279,6 +296,17 @@ export class GameAudio {
     const running = canPlay && this.context?.state === 'running';
     if (this.active !== running) { this.active = running; this.graph?.setActive(running); }
     if (!running || !this.graph) return;
+    if(deploymentActive(state.deployment)) {
+      const t=state.deployment!.time,f=deploymentFrame(getLevelWorld(state.levelId),t);
+      const gear=state.environment.kind==='planet'&&t>.35&&t<1.65?.10*Math.sin((t-.35)/1.3*Math.PI):0;
+      const door=t>2.5&&t<3.4?.12*Math.sin((t-2.5)/.9*Math.PI):0;
+      const ramp=t>3.35&&t<4?.13*Math.sin((t-3.35)/.65*Math.PI):0;
+      const settle=state.environment.kind==='planet'&&t>2.35&&t<2.55?.11*Math.sin((t-2.35)/.2*Math.PI):0;
+      this.graph.setDeployment(.22*f.lift+.15*f.brake,Math.max(gear,door,ramp,settle));
+      this.graph.setLoops(f.drive*.12,0,state.environment.kind==='planet'?.025:0);
+      return;
+    }
+    this.graph.setDeployment(0,0);
     const speed = clamp(Math.abs(state.speed) / CONFIG.maxSpeed);
     const thrust = clamp((Math.abs(state.forces.forward)+Math.abs(state.forces.side)*.65+Math.abs(state.forces.yaw)*.5)/CONFIG.acceleration);
     this.graph.setLoops(.028 + speed * .067 + thrust * .072, state.resources.laserActive && input.mine ? .23 : 0,
@@ -296,7 +324,7 @@ export class GameAudio {
   diagnostics(): AudioDiagnostics {
     return { contextState: this.disposed ? 'disposed' : this.unavailable ? 'unavailable' : this.context?.state ?? 'locked',
       active: this.active, muted: this.muted, volume: this.volume, voices: this.graph?.voices.size ?? 0,
-      loops: { ...(this.graph?.targets ?? { flight: 0, laser: 0, desert: 0 }) },
+      loops: { ...(this.graph?.targets ?? { flight: 0, laser: 0, desert: 0, atlas:0, hydraulic:0 }) },
       played: { ...(this.graph?.played ?? { break: 0, collect: 0, unload: 0 }) } };
   }
   dispose() {

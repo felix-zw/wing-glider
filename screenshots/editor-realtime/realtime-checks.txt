@@ -1,0 +1,34 @@
+Real-time editor integration
+PASS the actual asteroid moves before pointer release
+PASS drag preview leaves the authoring document unchanged
+PASS drag reuses rock geometry and material
+PASS collision and route validation run in the background
+PASS committing a transform retains the object and scene root
+PASS unaffected objects retain their GPU buffers
+PASS cancel restores the live object and attached ores
+PASS a new asteroid has a rendered silhouette immediately
+PASS placement detail and validation are asynchronous
+PASS prepared geometry replaces the proxy without replacing the object
+PASS undo removes the placement
+PASS redo restores the independent object
+PASS releasing the brush unlocks editing immediately
+PASS stroke commits to the document before background finalization
+PASS another stroke can begin before the world has finished rebuilding
+PASS multiple strokes preserve all unaffected scene buffers
+PASS latest cooked collision revision is installed
+PASS separate rapid strokes retain separate undo steps
+PASS background completion preserves the focused property input
+PASS generation immediately displays a proxy without locking the editor
+PASS generation preserves concurrent edits to other objects
+PASS generated placement has its own undo step
+PASS cancelled generation removes its proxy and ignores late results
+PASS repeated placement and undo release temporary GPU geometry
+PASS play uses the latest lighting without recompiling geometry
+PASS real storage worker persists the current complete document
+PASS editing continues while a delayed write is in progress
+PASS waiting saves are coalesced to the newest revision
+PASS an old completion never overwrites or acknowledges a newer draft
+PASS JSON still round trips every local form
+TIMING {"dragCommitMs":15.600000143051147,"placePreviewMs":12.299999952316284,"brushReleaseMs":8.800000190734863,"calls":402,"memory":{"geometries":117,"textures":34}}
+PASS incremental preview shaders compile
+ALL REALTIME CHECKS PASSED

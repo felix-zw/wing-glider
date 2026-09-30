@@ -1,0 +1,10 @@
+2026-09-30
+Production build: passed (TypeScript and Vite)
+Unit tests: 123 passed, 0 failed
+Spatial sky browser checks: 43 passed
+Lighting regression browser checks: 35 passed
+Actual mouse: body and distance handle verified
+Tracked diff whitespace: passed
+1080p sky: median 17.6 ms, p95 18.1 ms, 13 draw calls
+Geometry counts across view switches: [82,82,82,82,82]
+See checks.txt and lighting-regression.txt for detail.

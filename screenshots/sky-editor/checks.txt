@@ -1,0 +1,48 @@
+Spatial sky integration
+PASS planet selection opens full spatial viewport instead of SVG
+PASS perspective camera and hemisphere use the selected distance
+PASS hidden illumination source has an editor marker
+PASS selected celestial body starts a drag
+PASS live drag leaves the authored document untouched until release
+PASS live direction preview does not rebuild world or miniature
+PASS direction drag commits on the upper shell at fixed distance
+PASS direction gesture is exactly one global undo step
+PASS redo restores the exact direction
+PASS selected celestial body starts a drag
+PASS Escape cancels the gesture and stays in sky view
+PASS selected celestial body starts a drag
+PASS pointer cancellation restores the authored lighting
+PASS selected celestial body starts a drag
+PASS lost capture restores the authored lighting
+PASS golden rim handle starts a distance gesture
+PASS distance grows while the camera framing stays fixed
+PASS distance gesture preserves physical planet size
+PASS distance preserves direction and global light strength
+PASS distance gesture is one undo step
+PASS distance redo restores the exact radius
+PASS lower hemisphere changes only the view
+PASS explicit mirror moves the body below the horizon without changing distance
+PASS mirror undo leaves the selected editor hemisphere alone
+PASS mirror redo
+PASS return to level restores its independent camera
+PASS sky camera and hemisphere survive a level-view round trip
+PASS Alt-left rotates the camera
+PASS middle drag pans without a document edit
+PASS view gestures introduce no global undo entries
+PASS numeric distance and fit at 800 m
+PASS numeric distance and fit at 20000 m
+PASS radial drag clamps at maximum distance
+PASS radial drag clamps at minimum distance
+PASS hidden light selects its hemisphere and camera
+PASS sky design can start a separate play session
+PASS play return preserves sky view, camera, document and selection
+PASS IndexedDB and JSON preserve spatial celestial edits
+PASS reloading a lower celestial body restores the correct shell
+PASS reselecting a body focuses its actual hemisphere
+PASS repeated sky switches do not accumulate GPU geometries
+FRAME {"width":1920,"height":1080,"medianMs":17.600000143051147,"p95Ms":18.100000143051147,"drawCalls":13,"geometries":[82,82,82,82,82]}
+PASS shared celestial shaders compile
+PASS spatial sky editing also works on Aster
+ALL SPATIAL SKY CHECKS PASSED
+REAL POINTER direction drag: azimuth 74.116°, elevation -38.849°, distance 1800 m; undo enabled.
+REAL POINTER distance drag: 2107.088 m; matching 2107 m readout.

@@ -60,7 +60,8 @@ function applyResolution() {
   }
 }
 function placeForMining(s: State, d: Deposit) {
-  s.x = d.x + d.surface!.nx * 7; s.z = d.z + d.surface!.nz * 7; setVelocity(s,0);
+  const distance=s.environment.kind==='space'?10:7;
+  s.x = d.x + d.surface!.nx * distance; s.z = d.z + d.surface!.nz * distance; setVelocity(s,0);
   s.heading = Math.PI * 0.15; s.turret = Math.atan2(d.x - s.x, -(d.z - s.z));
 }
 function buildPreset(preset: Preset) {
@@ -91,7 +92,7 @@ function buildPreset(preset: Preset) {
     const deposit = s.resources.deposits[1]; placeForMining(s, deposit);
     s.resources.deposits.filter(d => d.structureId === deposit.structureId).forEach(d => { d.remaining = 0; });
   } else if (preset === 'belt-outcrop') {
-    const deposit = s.resources.deposits.find(d => d.resource === 'crystal' && d.surface!.nz > .3)!;
+    const deposit = s.resources.deposits.find(d => d.resource === 'crystal' && d.surface!.nz > .3) ?? s.resources.deposits.find(d=>d.resource==='crystal')!;
     placeForMining(s, deposit);
   } else if (preset === 'belt-mining') {
     const deposit = s.resources.deposits[1]; placeForMining(s, deposit);

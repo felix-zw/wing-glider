@@ -1,0 +1,24 @@
+Editor integration checks
+PASS Built-in level and theme open as an independent draft
+PASS Rotation applies through the visible property control
+PASS Scale applies to the placed asset
+PASS Undo restores scale
+PASS Redo restores edited scale
+PASS Theme updates the shared game renderer
+PASS Ore sector resource and amount can be edited
+PASS Duplicate creates an independent asteroid
+PASS Delete removes the selected instance and its ores
+PASS IndexedDB retains level and custom theme
+PASS JSON import/export preserves the complete package
+PASS Playtest compiles the current document even after an older registry snapshot
+PASS Playtest starts the current authored level
+PASS Returning from play preserves the document and does not save mined ore
+PASS Second playtest starts fresh
+PASS Geometry and texture counts remain stable across repeated editor rebuilds
+PASS Pasted JSON imports as an independent local level
+PASS Planet hills and their ore placements can be edited
+PASS Planet formation rotation reaches terrain and collision data
+PASS Editor returns to the game
+
+ALL EDITOR CHECKS PASSED
+GPU memory samples: [{"geometries":69,"textures":44},{"geometries":69,"textures":44},{"geometries":69,"textures":44},{"geometries":69,"textures":44},{"geometries":69,"textures":44},{"geometries":69,"textures":44}]

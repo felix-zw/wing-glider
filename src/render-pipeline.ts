@@ -16,7 +16,7 @@ class HalfResolutionAO extends GTAOPass {
       if (!object.visible) return;
       const mesh = object as THREE.Mesh;
       const materials = mesh.material ? (Array.isArray(mesh.material) ? mesh.material : [mesh.material]) : [];
-      if (object instanceof THREE.Sprite || materials.some(m => !m.depthWrite || m.opacity < 1)) { hidden.push(object); object.visible = false; }
+      if (object.userData.excludeAO || object instanceof THREE.Sprite || materials.some(m => !m.depthWrite || m.opacity < 1)) { hidden.push(object); object.visible = false; }
     });
     try { super.render(renderer, writeBuffer, readBuffer, dt, maskActive); } finally { hidden.forEach(object => object.visible = true); }
   }
@@ -41,8 +41,13 @@ export class RenderPipeline {
     for (const pass of [render, this.ao, this.bloom, aa, output]) this.composer.addPass(pass);
     this.passes = [render, this.ao, this.bloom, output, aa];
   }
+  setSky(scene:THREE.Scene,camera:THREE.Camera){
+    const sky=new RenderPass(scene,camera);this.composer.insertPass(sky,0);this.passes.push(sky);
+    const main=this.composer.passes[1] as RenderPass;main.clear=false;main.clearDepth=true;
+  }
   setQuality(quality: Quality) { this.ao.enabled = quality === 'high'; this.bloom.strength = quality === 'high' ? 0.24 : 0.16; }
   resize(width: number, height: number) { this.composer.setPixelRatio(this.renderer.getPixelRatio()); this.composer.setSize(width, height); }
   render(dt: number) { this.renderer.info.reset(); this.composer.render(dt); }
+  renderOffscreen(dt:number){this.renderer.info.reset();const screen=this.composer.renderToScreen;this.composer.renderToScreen=false;try{this.composer.render(dt);return this.composer.readBuffer.texture;}finally{this.composer.renderToScreen=screen;}}
   dispose() { this.passes.forEach(p => p.dispose()); this.composer.dispose(); }
 }

@@ -1,9 +1,10 @@
+import type {LiveOreCell} from './ore-paint';
 import * as THREE from 'three';
-import { RESOURCE_CONFIG as R, TRANSPORTER } from './config';
+import { RESOURCE_CONFIG as R } from './config';
 import { RESOURCE_TYPES, RESOURCES, type ResourceId, type Deposit } from './resources';
 import { type State } from './simulation';
 import { groundHeight, type LevelWorld } from './levels';
-import type { AssetLibrary } from './assets';
+import {disposeObject,type AssetLibrary} from './assets';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createOreOutcrop, crystalGeometry, terrainNormal } from './ore-outcrop';
 
@@ -13,7 +14,7 @@ interface VeinVisual {
   chunks: THREE.InstancedMesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   pieces: Chunk[];
   label: THREE.Sprite;
-  amount: number;
+  amount: number;updateCells?:(cells:LiveOreCell[])=>void;
 }
 
 function labelMaterial(text: string, color: string, width = 256) {
@@ -37,6 +38,7 @@ function glowTexture() {
 /** All mined fragments are visualized from their simulation IDs. Additional sparks
  * are bounded cosmetic instances and never participate in mining or collection. */
 export class ResourceWorld {
+  private editorSignatures=new Map<string,string>();private previewMatrices=new Map<THREE.Object3D,THREE.Matrix4>();
   readonly aimTargets: THREE.Mesh[] = [];
   private deposits = new Map<string, VeinVisual>();
   private fragments = new Map<ResourceId, THREE.InstancedMesh>();
@@ -70,7 +72,7 @@ export class ResourceWorld {
       const geometry = id === 'crystal' ? crystalGeometry()
         : id === 'copper' ? new THREE.IcosahedronGeometry(0.75, 0) : new THREE.DodecahedronGeometry(0.8, 0);
       this.geometries.set(id, geometry);
-      const fragments = new THREE.InstancedMesh(geometry, material, R.depositsPerType * R.unitsPerDeposit);
+      const fragments = new THREE.InstancedMesh(geometry, material, Math.max(1,Math.ceil(world.deposits.filter(d=>d.resource===id).reduce((n,d)=>n+d.remaining,0))));
       fragments.name = `${id}-fragments`; fragments.count = 0; fragments.frustumCulled = false;
       fragments.castShadow = true; fragments.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       this.fragments.set(id, fragments); scene.add(fragments);
@@ -80,50 +82,57 @@ export class ResourceWorld {
     scene.add(this.beam, this.beamGlow, this.target, this.sparks, this.impactGlow, this.impactLight);
     const beds: THREE.BufferGeometry[] = [], stains: THREE.BufferGeometry[] = [];
     for (const deposit of world.deposits) {
-      const outcrop = this.createDeposit(deposit); beds.push(outcrop.bed); stains.push(outcrop.stain);
+      const outcrop = this.createDeposit(deposit); if(outcrop.bed.getAttribute('position'))beds.push(outcrop.bed);else outcrop.bed.dispose(); if(outcrop.stain.getAttribute('position'))stains.push(outcrop.stain);else outcrop.stain.dispose();
     }
-    const bed = new THREE.Mesh(mergeGeometries(beds)!, assets.material('rock', { vertexColors:true, roughness:1, metalness:.025, side:THREE.DoubleSide }));
+    const bed = new THREE.Mesh((beds.length?mergeGeometries(beds)!:new THREE.BufferGeometry()), assets.material('rock', { vertexColors:true, roughness:1, metalness:.025, side:THREE.DoubleSide }));
     bed.name = 'ore-host-rock'; bed.castShadow = bed.receiveShadow = true;
-    const stain = new THREE.Mesh(mergeGeometries(stains)!, assets.material('rock', { vertexColors:true, roughness:1, metalness:0,
+    const stain = new THREE.Mesh((stains.length?mergeGeometries(stains)!:new THREE.BufferGeometry()), assets.material('rock', { vertexColors:true, roughness:1, metalness:0,
       transparent:true, depthWrite:false, side:THREE.DoubleSide, polygonOffset:true, polygonOffsetFactor:-1, polygonOffsetUnits:-1 }));
     stain.name = 'ore-weathering'; stain.receiveShadow = true; this.scene.add(bed, stain);
     beds.forEach(g => g.dispose()); stains.forEach(g => g.dispose());
-    this.createTransporter();
+
   }
   setQuality(quality: 'high' | 'standard') { this.high = quality === 'high'; this.sparks.count = this.high ? 28 : 12; }
+  setEmissions(deposits:readonly {id:string;emission?:{color:string;intensity:number}}[]){
+    for(const d of deposits){const visual=this.deposits.get(d.id);if(!visual)continue;const resource=this.world.deposits.find(o=>o.id===d.id)?.resource??'ferrite';
+      for(const material of [visual.patch.material,visual.chunks.material]){material.emissive.set(d.emission?.color??RESOURCES[resource].color);material.emissiveIntensity=d.emission?.intensity??(resource==='crystal'?.65:.08);}
+    }
+  }
 
   private createDeposit(d: Deposit) {
+    this.editorSignatures.set(d.id,JSON.stringify(d));
     const surface = d.surface!, isGround = surface.kind === 'ground';
     const outcrop = createOreOutcrop(this.world, this.assets, d, this.geometries.get(d.resource)!, this.fragmentMaterials.get(d.resource)!);
     const {patch, chunks, pieces} = outcrop;
     this.aimTargets.push(patch, chunks);
     const name = new THREE.Sprite(this.labels.get(d.resource)!); name.scale.set(9.6, 2.4, 1); name.visible = false;
     name.position.set(d.x + surface.nx * 3, surface.y + (isGround ? 6.5 : 10.5), d.z + surface.nz * 3);
-    this.scene.add(patch, chunks, name); this.deposits.set(d.id, { patch, chunks, pieces, label: name, amount: 1 });
+    this.scene.add(patch, chunks, name); this.deposits.set(d.id, { patch, chunks, pieces, label: name, amount: 1,updateCells:'updateCells' in outcrop?outcrop.updateCells:undefined });
     return outcrop;
   }
-  private createTransporter() {
-    const ship = this.assets.instantiate('atlas'); ship.name = 'ATLAS'; ship.position.set(-17, groundHeight(this.world, -17, -4), -4); this.scene.add(ship);
-    const zone = new THREE.Mesh(new THREE.RingGeometry(TRANSPORTER.radius - 0.11, TRANSPORTER.radius, 96),
-      new THREE.MeshBasicMaterial({ color: new THREE.Color('#efc67f').multiplyScalar(2.5), transparent: true, opacity: 0.9, side: THREE.DoubleSide, toneMapped: false, depthWrite: false }));
-    zone.rotation.x = -Math.PI / 2; zone.position.set(TRANSPORTER.x, groundHeight(this.world, 0, 0) + 0.15, TRANSPORTER.z); this.scene.add(zone);
-    const halo = new THREE.Mesh(new THREE.RingGeometry(TRANSPORTER.radius - 0.3, TRANSPORTER.radius + 0.18, 96),
-      new THREE.MeshBasicMaterial({ color: '#eab15e', transparent: true, opacity: 0.12, side: THREE.DoubleSide, toneMapped: false, depthWrite: false, blending: THREE.AdditiveBlending }));
-    halo.rotation.copy(zone.rotation); halo.position.copy(zone.position); this.scene.add(halo);
-    const name = new THREE.Sprite(labelMaterial('ATLAS / FRACHT', '#dfc392', 280)); name.scale.set(11.2, 2.56, 1);
-    name.position.set(-17, ship.position.y + 8, -17); this.scene.add(name);
+  previewPlacement(id:string,transform:THREE.Matrix4){
+    for(const d of this.world.deposits.filter(d=>d.structureId===id)){const visual=this.deposits.get(d.id);if(!visual)continue;for(const object of [visual.patch,visual.chunks,visual.label]){if(!this.previewMatrices.has(object)){object.updateMatrix();this.previewMatrices.set(object,object.matrix.clone());}object.matrix.copy(transform).multiply(this.previewMatrices.get(object)!);object.matrix.decompose(object.position,object.quaternion,object.scale);object.updateMatrixWorld(true);}}
+  }
+  clearPlacementPreview(){for(const [object,matrix] of this.previewMatrices){object.matrix.copy(matrix);matrix.decompose(object.position,object.quaternion,object.scale);object.updateMatrixWorld(true);}this.previewMatrices.clear();}
+  syncSpace(world:LevelWorld){
+    this.clearPlacementPreview();this.world=world;this.elapsed=null;
+    for(const [id,visual] of this.deposits){const deposit=world.deposits.find(d=>d.id===id);if(deposit&&this.editorSignatures.get(id)===JSON.stringify(deposit))continue;
+      for(const mesh of [visual.patch,visual.chunks]){this.aimTargets.splice(this.aimTargets.indexOf(mesh),1);disposeObject(mesh);}visual.label.removeFromParent();this.deposits.delete(id);this.editorSignatures.delete(id);
+    }
+    for(const deposit of world.deposits)if(!this.deposits.has(deposit.id)){const outcrop=this.createDeposit(deposit);outcrop.bed.dispose();outcrop.stain.dispose();}
   }
 
   render(s: State, muzzle: THREE.Vector3, running: boolean) {
     const firstFrame = this.elapsed === null;
     const dt = firstFrame ? 0 : Math.min(0.1, Math.max(0, s.elapsed - this.elapsed!)); this.elapsed = s.elapsed;
     for (const d of s.resources.deposits) {
-      const visual = this.deposits.get(d.id)!, goal = d.remaining / R.unitsPerDeposit;
+      const visual = this.deposits.get(d.id)!, goal = d.remaining / (d.initialAmount??R.unitsPerDeposit);
       const amount = firstFrame ? goal : visual.amount + (goal - visual.amount) * (1 - Math.exp(-dt * 8));
+      if(visual.updateCells&&d.surface?.cells){if(firstFrame||Math.abs(goal-visual.amount)>1e-9)visual.updateCells(d.surface.cells);visual.amount=goal;visual.label.visible=d.remaining>0&&d.id===s.resources.targetId;continue;}
       const pulse = d.resource === 'crystal' ? 0.17 + Math.sin(s.elapsed * 2.1) * 0.035 : 0.025;
       for (const material of [visual.patch.material, visual.chunks.material]) {
         material.color.copy(this.exhaustedColor).lerp(this.colors.get(d.resource)!, amount);
-        material.emissiveIntensity = amount * pulse * (material === visual.patch.material ? 0.4 : 1);
+        material.emissive.set(d.emission?.color??RESOURCES[d.resource].color);material.emissiveIntensity = amount * (d.emission?.intensity??pulse) * (material === visual.patch.material ? 0.4 : 1);
         material.metalness = RESOURCES[d.resource].metalness * (0.3 + amount * 0.7);
       }
       if (Math.abs(amount - visual.amount) > 0.00001) {

@@ -1,0 +1,135 @@
+Echtzeit-Prüfung
+PASS Stillstehender Pinsel erzeugt laufend Volumenänderungen
+PASS Vorschau ersetzt nur Objektabschnitte, keine Weltrevision
+PASS Kuhle vertieft sich bei weiter gehaltenem Pinsel
+PASS Fertiger Strich übernimmt seine aktuelle Revision
+PASS Ein Rückgängig-Schritt stellt den ganzen Strich zurück
+PASS Wiederholen stellt den kompletten Strich wieder her
+PASS Abbrechen verwirft den Strich und ignoriert verspätete Ergebnisse
+PASS Strg und Umschalt wechseln das Werkzeug auch ohne Mausbewegung
+PASS Schnelle Ziehbewegung wird vollständig in gültige Teilbewegungen aufgeteilt
+PASS Oberflächenmalerei wird im Formdokument gespeichert
+PASS Freies Erzspray erzeugt Schicht, Vorschau und Rohstoffmenge
+PASS Erzmalerei bildet einen Rückgängig-Schritt
+PASS Erzschicht wird vollständig wiederhergestellt
+PASS Beide Qualitätsstufen halten die Dreiecksgrenzen ein
+
+{
+  "viewport": [
+    1920,
+    1080
+  ],
+  "inputToGpuP95Ms": 37.700000047683716,
+  "samples": [
+    24.5,
+    36.90000009536743,
+    37.299999952316284,
+    37,
+    36.19999980926514,
+    37.200000047683716,
+    36.299999952316284,
+    36.90000009536743,
+    36.700000047683716,
+    36,
+    36.299999952316284,
+    37.40000009536743,
+    36.799999952316284,
+    36.09999990463257,
+    36.5,
+    35.40000009536743,
+    36.09999990463257,
+    36.59999990463257,
+    36.700000047683716,
+    35.700000047683716,
+    36.200000047683716,
+    36.40000009536743,
+    35.5,
+    37.200000047683716,
+    36.09999990463257,
+    36.299999952316284,
+    37.299999952316284,
+    36.59999990463257,
+    36.69999980926514,
+    37.09999990463257,
+    36.200000047683716,
+    36.90000009536743,
+    36.10000014305115,
+    36.60000014305115,
+    37.09999990463257,
+    37.200000047683716,
+    36.299999952316284,
+    36.700000047683716,
+    37.700000047683716,
+    36.5,
+    36.19999980926514,
+    36.69999980926514,
+    37.19999980926514,
+    36.40000009536743,
+    37.200000047683716,
+    37.09999990463257,
+    36,
+    36.299999952316284,
+    35.80000019073486,
+    36.10000014305115,
+    36.5,
+    35.09999990463257,
+    36.700000047683716,
+    171,
+    34.09999990463257,
+    36.799999952316284,
+    35.700000047683716,
+    156.20000004768372,
+    33.89999985694885,
+    36.10000014305115,
+    36.700000047683716,
+    36,
+    36.90000009536743,
+    36.69999980926514,
+    37.799999952316284,
+    33.700000047683716,
+    35.799999952316284,
+    35.700000047683716,
+    34.39999985694885,
+    34.700000047683716,
+    34.59999990463257,
+    34.89999985694885,
+    35.799999952316284,
+    35.60000014305115,
+    35.5,
+    35.39999985694885,
+    34.700000047683716,
+    35.40000009536743,
+    34.90000009536743,
+    34,
+    35.09999990463257,
+    35.80000019073486,
+    34.89999985694885,
+    34.89999985694885,
+    35.60000014305115,
+    35.299999952316284,
+    35.700000047683716,
+    35.89999985694885,
+    35.39999985694885,
+    35.700000047683716,
+    35.39999985694885,
+    35,
+    35.5,
+    36,
+    35.89999985694885,
+    35.59999990463257,
+    35.59999990463257,
+    35.90000009536743,
+    36.09999990463257,
+    151.79999995231628
+  ],
+  "triangles": {
+    "high": 11976,
+    "standard": 4532
+  },
+  "drawCalls": 404,
+  "memory": {
+    "geometries": 130,
+    "textures": 31
+  }
+}
+ALL SCULPT CHECKS PASSED

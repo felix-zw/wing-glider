@@ -1,0 +1,3 @@
+Right properties button: aria-pressed true -> false; finish toolbar removed.
+Upper hemisphere: -36 -> +36 degrees. Real mouse drag: +28.097 degrees, azimuth -80.978.
+Lower hemisphere: +28.097 -> -28.097. Body dragged again on lower hemisphere; see numeric properties in mirrored-body.png.

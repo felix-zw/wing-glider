@@ -1,0 +1,128 @@
+Editor interaction checks
+PASS camera 2: defaults suppressed throughout gesture
+PASS camera 2: orbit ends cleanly without spraying
+PASS camera 1: defaults suppressed throughout gesture
+PASS camera 1: orbit ends cleanly without spraying
+PASS camera 0: defaults suppressed throughout gesture
+PASS camera 0: orbit ends cleanly without spraying
+PASS mousedown: default suppressed
+PASS mousemove: default suppressed
+PASS mouseup: default suppressed
+PASS contextmenu: default suppressed
+PASS auxclick: default suppressed
+PASS dragstart: default suppressed
+PASS editor gestures do not reach page mouse handlers
+PASS camera gestures leave form and ore unchanged
+PASS focus loss releases camera drag
+PASS Alt drag pans the level without placing or moving objects
+PASS mouse behavior outside the editor is preserved
+QUALITY high
+PASS ferrite: spray creates surface samples
+PASS ferrite / 7: committed document is valid
+PASS ferrite / 7 after release: committed world contains supported ore
+PASS ferrite / 7 after release: current samples and mass reach the world
+PASS ferrite / 7 after release: both ore meshes stay visible
+PASS ferrite / 7 after release: ore reaches the renderer without another click
+PASS copper: spray creates surface samples
+PASS copper / 7: committed document is valid
+PASS copper / 7 after release: committed world contains supported ore
+PASS copper / 7 after release: current samples and mass reach the world
+PASS copper / 7 after release: both ore meshes stay visible
+PASS copper / 7 after release: ore reaches the renderer without another click
+PASS crystal: spray creates surface samples
+PASS crystal / 7: committed document is valid
+PASS crystal / 7 after release: committed world contains supported ore
+PASS crystal / 7 after release: current samples and mass reach the world
+PASS crystal / 7 after release: both ore meshes stay visible
+PASS crystal / 7 after release: ore reaches the renderer without another click
+PASS ferrite: spray creates surface samples
+PASS ferrite / 14.5: committed document is valid
+PASS ferrite / 14.5 after release: committed world contains supported ore
+PASS ferrite / 14.5 after release: current samples and mass reach the world
+PASS ferrite / 14.5 after release: both ore meshes stay visible
+PASS ferrite / 14.5 after release: ore reaches the renderer without another click
+PASS copper: spray creates surface samples
+PASS copper / 14.5: committed document is valid
+PASS copper / 14.5 after release: committed world contains supported ore
+PASS copper / 14.5 after release: current samples and mass reach the world
+PASS copper / 14.5 after release: both ore meshes stay visible
+PASS copper / 14.5 after release: ore reaches the renderer without another click
+PASS crystal: spray creates surface samples
+PASS crystal / 14.5: committed document is valid
+PASS crystal / 14.5 after release: committed world contains supported ore
+PASS crystal / 14.5 after release: current samples and mass reach the world
+PASS crystal / 14.5 after release: both ore meshes stay visible
+PASS crystal / 14.5 after release: ore reaches the renderer without another click
+QUALITY standard
+PASS ferrite: spray creates surface samples
+PASS ferrite / 7: committed document is valid
+PASS ferrite / 7 after release: committed world contains supported ore
+PASS ferrite / 7 after release: current samples and mass reach the world
+PASS ferrite / 7 after release: both ore meshes stay visible
+PASS ferrite / 7 after release: ore reaches the renderer without another click
+PASS copper: spray creates surface samples
+PASS copper / 7: committed document is valid
+PASS copper / 7 after release: committed world contains supported ore
+PASS copper / 7 after release: current samples and mass reach the world
+PASS copper / 7 after release: both ore meshes stay visible
+PASS copper / 7 after release: ore reaches the renderer without another click
+PASS crystal: spray creates surface samples
+PASS crystal / 7: committed document is valid
+PASS crystal / 7 after release: committed world contains supported ore
+PASS crystal / 7 after release: current samples and mass reach the world
+PASS crystal / 7 after release: both ore meshes stay visible
+PASS crystal / 7 after release: ore reaches the renderer without another click
+PASS ferrite: spray creates surface samples
+PASS ferrite / 14.5: committed document is valid
+PASS ferrite / 14.5 after release: committed world contains supported ore
+PASS ferrite / 14.5 after release: current samples and mass reach the world
+PASS ferrite / 14.5 after release: both ore meshes stay visible
+PASS ferrite / 14.5 after release: ore reaches the renderer without another click
+PASS copper: spray creates surface samples
+PASS copper / 14.5: committed document is valid
+PASS copper / 14.5 after release: committed world contains supported ore
+PASS copper / 14.5 after release: current samples and mass reach the world
+PASS copper / 14.5 after release: both ore meshes stay visible
+PASS copper / 14.5 after release: ore reaches the renderer without another click
+PASS crystal: spray creates surface samples
+PASS crystal / 14.5: committed document is valid
+PASS crystal / 14.5 after release: committed world contains supported ore
+PASS crystal / 14.5 after release: current samples and mass reach the world
+PASS crystal / 14.5 after release: both ore meshes stay visible
+PASS crystal / 14.5 after release: ore reaches the renderer without another click
+PASS undo removes exactly the last spray stroke
+PASS redo restores the entire committed layer
+PASS redo: committed world contains supported ore
+PASS redo: current samples and mass reach the world
+PASS redo: both ore meshes stay visible
+PASS redo: ore reaches the renderer without another click
+PASS Escape: unfinished paint is discarded
+PASS Escape: committed world contains supported ore
+PASS Escape: current samples and mass reach the world
+PASS Escape: both ore meshes stay visible
+PASS Escape: ore reaches the renderer without another click
+PASS pointercancel: unfinished paint is discarded
+PASS pointercancel: committed world contains supported ore
+PASS pointercancel: current samples and mass reach the world
+PASS pointercancel: both ore meshes stay visible
+PASS pointercancel: ore reaches the renderer without another click
+PASS lostpointercapture: unfinished paint is discarded
+PASS lostpointercapture: committed world contains supported ore
+PASS lostpointercapture: current samples and mass reach the world
+PASS lostpointercapture: both ore meshes stay visible
+PASS lostpointercapture: ore reaches the renderer without another click
+PASS blur: unfinished paint is discarded
+PASS blur: committed world contains supported ore
+PASS blur: current samples and mass reach the world
+PASS blur: both ore meshes stay visible
+PASS blur: ore reaches the renderer without another click
+PASS invalid draft fallback restores the previously visible ore
+PASS previously saved empty edge cells are repaired without losing ore
+PASS JSON imports repair the same empty edge cells
+PASS saved templates repair only empty edge cells
+PASS opening an affected draft restores the complete valid layer
+PASS reopened draft: committed world contains supported ore
+PASS reopened draft: current samples and mass reach the world
+PASS reopened draft: both ore meshes stay visible
+PASS reopened draft: ore reaches the renderer without another click
+ALL INTERACTION CHECKS PASSED

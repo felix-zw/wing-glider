@@ -1,30 +1,43 @@
-import { CONFIG, RESOURCE_CONFIG as R, TRANSPORTER } from './config';
-import { FIRST_MISSION, type MissionDefinition } from './missions';
+import {themeLighting,type LightingDefinition} from './lighting';
+import type {AsteroidAsset} from './asset-catalog';
+import { type MissionDefinition } from './missions';
+import { DOCUMENTS, validateDocument, type LevelDocument } from './level-document';
+import { THEMES, type ThemeDefinition } from './themes';
+import {resolveOreCell} from './ore-paint';
+import {registerSculpt,retainSculpts} from './sculpt-runtime';
 import { bedrockUplift } from './geology';
 import type { Deposit, Position, ResourceId } from './resources';
 
-export type LevelId = 'aster' | 'belt';
+export type LevelId = string;
 export interface Shelter extends Position { name: string; radius: number }
-/** Convex, counter-clockwise vertices in host-local X/Z coordinates. */
-interface RockFootprint { footprint?: readonly Position[] }
+/** Local X/Z contours may include disjoint rocks and interior openings. */
+interface RockFootprint { query?:AsteroidAsset;footprint?: readonly Position[]; footprints?:readonly (readonly Position[])[]; assetId?: string; rotation?: number; scale?: number; facing?: number }
 export type Structure =
   | (Position & { id: string; kind: 'hill'; radius: number; height: number })
   | (Position & RockFootprint & { id: string; kind: 'cliff'; halfX: number; halfZ: number; height: number })
   | (Position & RockFootprint & { id: string; kind: 'asteroid'; radius: number; height: number });
 export type Solid = Exclude<Structure, { kind: 'hill' }>;
 export interface LevelDefinition { id: LevelId; name: string; subtitle: string; description: string; environment: 'planet' | 'space'; seed: number; mission: MissionDefinition }
-export interface LevelWorld { definition: LevelDefinition; spawn: Position; structures: readonly Structure[]; solids: readonly Solid[]; shelters: readonly Shelter[]; deposits: readonly Deposit[]; base: typeof TRANSPORTER }
-export const LEVELS: Record<LevelId, LevelDefinition> = {
-  aster: { id: 'aster', name: 'Aster', subtitle: 'BERGE & SCHLUCHTEN', description: 'Erzadern in hohen Hügeln und steilen Felswänden. Suche Schutz vor Sandstürmen.', environment: 'planet', seed: 2409, mission: FIRST_MISSION },
-  belt: { id: 'belt', name: 'Asteroidengürtel', subtitle: 'ZWISCHEN DEN STERNEN', description: 'Baue an großen Asteroiden ab. Weiche fliegenden Felsbrocken aus und kehre zu ATLAS zurück.', environment: 'space', seed: 7113,
-    mission: { ...FIRST_MISSION, id: 'belt-first-delivery', title: 'Schätze im Vakuum.' } },
-};
+export interface LevelWorld { lighting:LightingDefinition; definition: LevelDefinition; spawn: Position; structures: readonly Structure[]; solids: readonly Solid[]; shelters: readonly Shelter[]; deposits: readonly Deposit[]; base: Position & {radius:number;maxUnloadSpeed:number;name:string}; theme: ThemeDefinition; bounds: number; revision: number }
+export const LEVELS: Record<LevelId, LevelDefinition> = {};
 export function seededRandom(initial: number) { let seed = initial; return () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; }; }
 const footprintCache = new WeakMap<Solid, readonly Position[]>();
+const footprintsCache = new WeakMap<Solid,readonly (readonly Position[])[]>();
+export function getSolidFootprints(solid:Solid):readonly (readonly Position[])[] {
+  let loops=footprintsCache.get(solid);if(loops)return loops;
+  if(solid.kind==='asteroid'&&!solid.footprint&&!solid.footprints)return [];
+  const local=solid.footprints??(solid.footprint?[solid.footprint]:solid.kind==='cliff'?[[
+    {x:-solid.halfX,z:-solid.halfZ},{x:solid.halfX,z:-solid.halfZ},{x:solid.halfX,z:solid.halfZ},{x:-solid.halfX,z:solid.halfZ},
+  ]]:[]);
+  const c=Math.cos(solid.rotation??0),n=Math.sin(solid.rotation??0),k=solid.scale??1;
+  loops=Object.freeze(local.map(loop=>Object.freeze(loop.map(p=>Object.freeze({x:solid.x+(p.x*c-p.z*n)*k,z:solid.z+(p.x*n+p.z*c)*k})))));
+  footprintsCache.set(solid,loops);return loops;
+}
 /** Exact static rock boundary shared by rendering, navigation, ore placement and collision.
  * A null boundary denotes the circular dynamic/shield colliders used by the simulation.
  */
 export function getSolidFootprint(solid: Solid): readonly Position[] | null {
+  if(solid.footprints)return getSolidFootprints(solid)[0]??null;
   if (solid.kind === 'asteroid' && !solid.footprint) return null;
   let points = footprintCache.get(solid);
   if (!points) {
@@ -32,36 +45,18 @@ export function getSolidFootprint(solid: Solid): readonly Position[] | null {
       { x: -solid.halfX, z: -solid.halfZ }, { x: solid.halfX, z: -solid.halfZ },
       { x: solid.halfX, z: solid.halfZ }, { x: -solid.halfX, z: solid.halfZ },
     ] : []);
-    points = Object.freeze(local.map(p => Object.freeze({ x: p.x + solid.x, z: p.z + solid.z })));
+    const c=Math.cos(solid.rotation??0), n=Math.sin(solid.rotation??0), k=solid.scale??1;
+    points = Object.freeze(local.map(p => Object.freeze({ x: solid.x+(p.x*c-p.z*n)*k, z: solid.z+(p.x*n+p.z*c)*k })));
     footprintCache.set(solid, points);
   }
   return points;
 }
 
-function convexHull(points: Position[]): Position[] {
-  const sorted = points.sort((a, b) => a.x - b.x || a.z - b.z);
-  const cross = (a: Position, b: Position, c: Position) => (b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x);
-  const half = (list: Position[]) => {
-    const result: Position[] = [];
-    for (const p of list) { while (result.length > 1 && cross(result[result.length - 2], result[result.length - 1], p) <= 0) result.pop(); result.push(p); }
-    return result.slice(0, -1);
-  };
-  return [...half(sorted), ...half([...sorted].reverse())];
-}
 function cliffFootprint(halfX: number, halfZ: number, index: number): Position[] {
   // Chamfered strata, with different broken ends for each ridge. Interior canyon
   // faces remain long enough to carry a coherent nine-metre ore seam.
   const shape = [ [-0.72, -1], [0.43, -0.97], [1, -0.68], [1, 0.60], [0.63, 1], [-0.47, 0.94], [-1, 0.57], [-1, -0.61] ];
   return shape.map(([x, z]) => ({ x: x * halfX, z: z * halfZ * (1 - (index % 3) * 0.025) }));
-}
-function asteroidFootprint(radius: number, index: number): Position[] {
-  const random = seededRandom(5701 + index * 719), rotation = index * 0.73;
-  const aspect = [0.82, 1.04, 0.91, 0.76, 1.12][index % 5];
-  return convexHull(Array.from({ length: 11 }, (_, i) => {
-    const angle = i / 11 * Math.PI * 2, r = radius * (0.82 + random() * 0.18);
-    const x = Math.cos(angle) * r, z = Math.sin(angle) * r * aspect;
-    return { x: x * Math.cos(rotation) - z * Math.sin(rotation), z: x * Math.sin(rotation) + z * Math.cos(rotation) };
-  }));
 }
 /** Intersect a direction from the host centre with its actual polygon edge. */
 export function sampleRockSurface(solid: Solid, angle: number): Position & { nx: number; nz: number; availableWidth: number } {
@@ -82,49 +77,57 @@ export function sampleRockSurface(solid: Solid, angle: number): Position & { nx:
   throw new Error(`Invalid convex rock footprint: ${solid.id}`);
 }
 const cache = new Map<LevelId, LevelWorld>();
-export function getLevelWorld(id: LevelId = 'aster'): LevelWorld {
-  const cached = cache.get(id); if (cached) return cached;
-  const structures: Structure[] = [], deposits: Deposit[] = [];
-  const shelters: Shelter[] = id === 'aster' ? [-140, 0, 140].flatMap((z, row) => [-140, 0, 140].map((x, col) => ({ x, z, name: `S${row * 3 + col + 1}`, radius: CONFIG.shelterRadius }))) : [];
-  const world: LevelWorld = { definition: LEVELS[id], spawn: id === 'aster' ? { x: 25, z: 36 } : { x: 0, z: 12 }, structures, solids: [], shelters, deposits, base: TRANSPORTER };
-  if (id === 'aster') {
-    [[42, 9, 37, 29], [74, 92, 43, 35], [-62, -55, 36, 32], [118, -82, 40, 36], [-146, 64, 38, 34], [-66, 165, 34, 29]].forEach(([x, z, radius, height], i) => structures.push({ id: `hill-${i}`, kind: 'hill', x, z, radius, height }));
-    [[-55, 45, 5, 23], [-25, 45, 5, 23], [100, 35, 23, 5], [100, 65, 23, 5], [-100, -105, 23, 5], [-100, -75, 23, 5]].forEach(([x, z, halfX, halfZ], i) => structures.push({ id: `cliff-${i}`, kind: 'cliff', x, z, halfX, halfZ, height: 58 + i * 2, footprint: cliffFootprint(halfX, halfZ, i) }));
-  } else {
-    [[40, -10, 17], [-60, -30, 23], [65, 65, 22], [-85, 75, 24], [130, -80, 26], [-135, -100, 21], [155, 120, 23], [-60, 155, 22], [30, -160, 28]].forEach(([x, z, radius], i) => structures.push({ id: `asteroid-${i}`, kind: 'asteroid', x, z, radius, height: radius * (1.15 + i % 3 * 0.13), footprint: asteroidFootprint(radius, i) }));
-  }
-  world.solids = structures.filter((s): s is Solid => s.kind !== 'hill');
-  const types: ResourceId[] = ['ferrite', 'copper', 'crystal'];
-  const add = (host: Structure, x: number, z: number, nx: number, nz: number, width: number) => {
-    const index = deposits.length, y = host.kind === 'asteroid' ? 2.5 : groundHeight(world, x, z) + 0.3;
-    deposits.push({ id: `${id}-vein-${index}`, resource: types[index % 3], x, z, remaining: R.unitsPerDeposit, progress: 0,
-      structureId: host.id, surface: { kind: host.kind === 'hill' ? 'ground' : host.kind === 'cliff' ? 'wall' : 'asteroid', y, nx, nz, width } });
-  };
-  for (const host of structures) {
-    if (host.kind === 'hill') {
-      const angle = Math.atan2(36 - host.z, 25 - host.x);
-      const angles = host.id === 'hill-0' ? [angle - 0.7, angle, angle + 0.7] : host.id === 'hill-5' ? [angle] : [angle - 0.35, angle + (host.id === 'hill-1' ? 0.6 : 0.7)];
-      for (const a of angles) add(host, host.x + Math.cos(a) * host.radius * 0.62, host.z + Math.sin(a) * host.radius * 0.62, Math.cos(a), Math.sin(a), 7);
-    } else if (host.kind === 'cliff') {
-      const i = Number(host.id.split('-')[1]), sign = i % 2 === 0 ? 1 : -1;
-      const nx = host.halfX < host.halfZ ? sign : 0, nz = host.halfX < host.halfZ ? 0 : sign;
-      const point = sampleRockSurface(host, Math.atan2(nz, nx));
-      add(host, point.x + point.nx * 0.15, point.z + point.nz * 0.15, point.nx, point.nz, Math.min(9, point.availableWidth));
-    } else {
-      const angle = Math.atan2(-host.z, -host.x);
-      for (const a of [angle - 0.48, angle + 0.48]) {
-        const point = sampleRockSurface(host, a);
-        add(host, point.x + point.nx * 0.15, point.z + point.nz * 0.15, point.nx, point.nz, Math.min(6, point.availableWidth));
-      }
+let revision=0;
+export function compileLevel(document: LevelDocument): LevelWorld {
+  const errors=validateDocument(document).filter(i=>i.severity==='error');
+  if(errors.length)throw new Error(errors[0].message);
+  const d=structuredClone(document);
+  const structures:Structure[]=d.objects.map(o=>{
+    if(o.assetId==='sculpt-asteroid'){
+      const sculpt=d.sculpts![String(o.parameters.sculptId)],asset=registerSculpt(d.id,o.id,sculpt,o.scale);
+      return {kind:'asteroid',id:o.id,x:o.x,z:o.z,assetId:asset.id,query:asset,rotation:o.rotation,scale:o.scale,
+        radius:Math.max(0,...asset.footprints!.flat().map(p=>Math.hypot(p.x,p.z)))*o.scale,height:72*o.scale,footprint:asset.footprint,footprints:asset.footprints};
     }
-  }
-  // Definitions are shared by simulation and rendering, never used as mutable expedition state.
-  for (const d of deposits) { if (d.surface) Object.freeze(d.surface); Object.freeze(d); }
-  for (const structure of structures) if (structure.kind !== 'hill' && structure.footprint) { structure.footprint.forEach(Object.freeze); Object.freeze(structure.footprint); }
-  structures.forEach(Object.freeze); shelters.forEach(Object.freeze);
-  Object.freeze(structures); Object.freeze(world.solids); Object.freeze(deposits); Object.freeze(shelters);
-  cache.set(id, Object.freeze(world)); return world;
+    const p=o.parameters;
+    if(o.assetId==='hill')return {kind:'hill',id:o.id,x:o.x,z:o.z,radius:Number(p.radius)*o.scale,height:Number(p.height)*o.scale};
+    const halfX=Number(p.halfX),halfZ=Number(p.halfZ);
+    return {kind:'cliff',id:o.id,x:o.x,z:o.z,rotation:o.rotation,scale:o.scale,facing:Number(p.facing??(Number(o.id.split('-').at(-1))%2===0?1:-1)),halfX:halfX*o.scale,halfZ:halfZ*o.scale,height:Number(p.height)*o.scale,
+      footprint:cliffFootprint(halfX,halfZ,Number(p.variant??0))};
+  });
+  const definition:LevelDefinition={id:d.id,name:d.name,subtitle:d.subtitle,description:d.description,environment:d.environment,seed:d.seed,
+    mission:{id:d.id+'-delivery',title:'Wertvolle Fracht.',objective:{id:'delivery',kind:'all',label:'Rohstoffe an ATLAS liefern',children:(['ferrite','copper','crystal'] as const).filter(r=>d.delivery[r]>0).map(r=>({id:r+'-delivery',kind:'count',label:{ferrite:'Ferrit',copper:'Kupfererz',crystal:'Kristalle'}[r],event:'delivered',resource:r,amount:d.delivery[r]}))}}};
+  const world:LevelWorld={lighting:d.lighting??themeLighting(THEMES[d.themeId]),definition,spawn:d.spawn,base:d.base,shelters:d.shelters,structures,solids:structures.filter((s):s is Solid=>s.kind!=='hill'),deposits:[],theme:structuredClone(THEMES[d.themeId]),bounds:d.bounds,revision:++revision};
+  world.deposits=d.deposits.map(ore=>{
+    const host=world.structures.find(s=>s.id===ore.structureId)!;
+    if(ore.paint&&host.kind==='asteroid'){
+      const cells=ore.paint.cells.map(cell=>resolveOreCell(host,cell)),p=cells[0],width=Math.max(...cells.map(c=>Math.hypot(c.x-p.x,c.z-p.z)+c.radius))*2;
+      return {emission:ore.emission,id:ore.id,resource:ore.resource,structureId:host.id,x:p.x,z:p.z,remaining:ore.amount,initialAmount:ore.amount,progress:0,
+        surface:{kind:'asteroid',y:p.y,nx:p.normal.x,nz:p.normal.z,width,cells,invalid:cells.some(c=>!c.valid)}};
+    }
+    const surface={...ore.surface!},x=ore.x!,z=ore.z!;
+    surface.y=groundHeight(world,x,z)+.3;
+    return {emission:ore.emission,id:ore.id,resource:ore.resource,structureId:host.id,x,z,remaining:ore.amount,initialAmount:ore.amount,progress:0,surface};
+  });
+  const freeze=(value:any):any=>{if(value&&typeof value==='object'&&!Object.isFrozen(value)){Object.values(value).forEach(freeze);Object.freeze(value);}return value;};
+  return freeze(world);
 }
+export function registerLevel(document:LevelDocument):LevelWorld {
+  const world=compileLevel(document); DOCUMENTS.set(document.id,structuredClone(document));LEVELS[document.id]=world.definition;cache.set(document.id,world);return world;
+}
+/** Adopt a worker-built revision without repeating surface or navigation work. */
+export function installLevel(document:LevelDocument,world:LevelWorld):LevelWorld {
+  retainSculpts(document.id,document.objects.map(o=>o.id));
+  if(Object.isFrozen(world)){DOCUMENTS.set(document.id,document);LEVELS[document.id]=world.definition;cache.set(document.id,world);return world;}
+  for(const solid of world.solids)if(solid.kind==='asteroid'&&!solid.query)solid.query=registerSculpt(document.id,solid.id,document.sculpts![String(document.objects.find(o=>o.id===solid.id)!.parameters.sculptId)],solid.scale);
+  const freeze=(value:any):any=>{if(value&&typeof value==='object'&&!Object.isFrozen(value)){Object.values(value).forEach(freeze);Object.freeze(value);}return value;};
+  world.revision=++revision;freeze(world);DOCUMENTS.set(document.id,document);LEVELS[document.id]=world.definition;cache.set(document.id,world);return world;
+}
+export function getLevelWorld(id:LevelId='aster'):LevelWorld {
+  const found=cache.get(id);if(found)return found;
+  const document=DOCUMENTS.get(id);if(!document)throw new Error('Unbekanntes Level: '+id);
+  return registerLevel(document);
+}
+for(const d of DOCUMENTS.values())LEVELS[d.id]={id:d.id,name:d.name,subtitle:d.subtitle,description:d.description,environment:d.environment,seed:d.seed,mission:{id:'loading',title:'Wertvolle Fracht.',objective:{id:'delivery',kind:'all',label:'Liefern',children:[]}}};
 function terrainHeight(world: LevelWorld, x: number, z: number, uplift: boolean): number {
   if (world.definition.environment === 'space') return 0;
   const seed = world.definition.seed * 0.001;
@@ -139,7 +142,11 @@ function terrainHeight(world: LevelWorld, x: number, z: number, uplift: boolean)
   h += uplift ? Math.max(hills, bedrockUplift(world, x, z)) : hills;
   for (const s of world.shelters) {
     const d = Math.hypot(x - s.x, z - s.z);
-    if (d < 30) { const t = Math.min(1, Math.max(0, (d - 12) / 18)); h = 1.5 + (h - 1.5) * t * t * (3 - 2 * t); }
+    if (d < s.radius+18) { const t = Math.min(1, Math.max(0, (d - s.radius) / 18)); h = 1.5 + (h - 1.5) * t * t * (3 - 2 * t); }
+  }
+  const baseDistance=Math.hypot(x-world.base.x,z-world.base.z);
+  if(baseDistance<world.base.radius+8 && !world.shelters.some(s=>Math.hypot(s.x-world.base.x,s.z-world.base.z)<1)){
+    const t=Math.min(1,Math.max(0,(baseDistance-world.base.radius)/(8)));h=1.5+(h-1.5)*t*t*(3-2*t);
   }
   return h;
 }

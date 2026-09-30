@@ -1,0 +1,204 @@
+PASS production menu Edit opens the selected belt
+PASS real keyboard changes enable Undo
+PASS storage worker acknowledges Lokal gespeichert
+- generic "Asteroidengürtel mit Erzadern, ATLAS und fliegenden Asteroiden"
+- region "Level-Editor":
+  - text: WING GLIDER
+  - generic: LEVEL WORKSHOP
+  - button "← Spiel"
+  - button "Speichern" [active]
+  - button "JSON exportieren"
+  - button "↶ Rückgängig"
+  - button "↷ Wiederholen" [disabled]
+  - button "▷ Probespielen"
+  - complementary:
+    - heading "Expedition" [level=3]
+    - text: Levelname
+    - textbox "Levelname": Asteroidengürtel · Entwurf
+    - button "Neuer Gürtel"
+    - button "Neuer Planet"
+    - generic "Gespeicherte Entwürfe & Import"
+    - generic "Asteroiden-Generator"
+    - button "＋ Zufallsasteroid platzieren"
+    - text: Generator-Seed
+    - spinbutton "Generator-Seed": "7113"
+    - checkbox "Neuer Zufall bei jedem Aufruf" [checked]
+    - text: Neuer Zufall bei jedem Aufruf
+    - text: Grundform
+    - combobox "Grundform":
+      - option "Zufällige Grundform" [selected]
+      - option "Bruchplatte"
+      - option "Angeschnittener Körper"
+      - option "Quaderähnlicher Brocken"
+      - option "Länglicher Splitter"
+      - option "Felsmasse"
+    - text: Ausbrüche
+    - slider "Ausbrüche": "0.65"
+    - text: Erzdichte
+    - slider "Erzdichte": "0.55"
+    - text: Generierte Rohstoffe
+    - combobox "Generierte Rohstoffe":
+      - option "Alle drei Rohstoffe" [selected]
+      - option "Ferrit"
+      - option "Kupfererz"
+      - option "Kristalle"
+    - text: Leuchtpalette
+    - combobox "Leuchtpalette":
+      - option "Zufällig" [selected]
+      - option "Warm · Glut"
+      - option "Kühl · Mineralien"
+    - checkbox "Neuer Asteroid mit Erz & Leuchten" [checked]
+    - text: Neuer Asteroid mit Erz & Leuchten
+    - paragraph: "Seed wiederverwenden: Zufallsoption ausschalten. Jeder Aufruf ist ein Rückgängig-Schritt."
+    - heading "Himmel & Licht" [level=3]
+    - button "☀ Himmelsansicht"
+    - button "＋ Sonne"
+    - button "＋ Planet"
+    - button "＋ Leuchtboje"
+    - button "＋ Warnbake"
+    - button "＋ Bergbauscheinwerfer"
+    - button "＋ Reaktorkern"
+    - button "☀ Hauptlicht"
+    - button "☀ Streiflicht"
+    - heading "Asset-Palette" [level=3]
+    - button "＋ Bruchplatte"
+    - button "＋ Angeschnittener Körper"
+    - button "＋ Quaderähnlicher Brocken"
+    - button "＋ Länglicher Splitter"
+    - button "＋ Felsmasse"
+    - paragraph: Asset wählen, dann im Flugraum platzieren.
+    - generic "Eigene Vorlagen"
+    - generic: Noch keine eigenen Vorlagen.
+    - heading "Objekte · 5" [level=3]
+    - button "◎ Startpunkt"
+    - button "▣ ATLAS"
+    - button "Bruchplatte" [pressed]
+    - button "Angeschnittener Körper"
+    - button "Länglicher Splitter"
+    - button "Quaderähnlicher Brocken"
+    - button "Felsmasse"
+  - complementary:
+    - heading "Auswahl" [level=3]
+    - strong: Bruchplatte
+    - text: Position X
+    - spinbutton "Position X": "-99.5"
+    - text: Position Z
+    - spinbutton "Position Z": "2"
+    - text: Drehung °
+    - spinbutton "Drehung °": "0"
+    - text: Skalierung
+    - spinbutton "Skalierung": "1.25"
+    - button "Duplizieren"
+    - button "Löschen"
+    - button "Auswahl zentrieren"
+    - generic "Auswahl generieren"
+    - button "Form neu generieren"
+    - button "Erze neu generieren"
+    - button "Oberflächenleuchten generieren"
+    - button "Inneres generieren"
+    - button "Alles neu generieren"
+    - paragraph: Einstellungen links. Erzgenerierung ersetzt die gewählten Rohstoffe nur auf diesem Fels. Formänderungen können bestehende Erzflächen ungültig machen; diese werden markiert.
+    - heading "Gemalte Erzschichten" [level=3]
+    - text: Ferrit · 12.0 Einheiten
+    - button "Ungültige Stellen entfernen"
+    - button "Entfernen"
+    - text: Kupfererz · 12.0 Einheiten
+    - button "Ungültige Stellen entfernen"
+    - button "Entfernen"
+    - text: Kristall · 12.0 Einheiten
+    - button "Ungültige Stellen entfernen"
+    - button "Entfernen"
+    - text: Ferrit · 12.0 Einheiten
+    - button "Ungültige Stellen entfernen"
+    - button "Entfernen"
+    - paragraph: Form bearbeiten → Erz aufsprühen. Fläche und Schichtdicke bestimmen die Menge.
+    - generic "Erzleuchten"
+    - generic "Form & Oberfläche"
+    - button "Form bearbeiten"
+    - text: Vorlagenname
+    - textbox "Vorlagenname": Bruchplatte
+    - button "Als Vorlage speichern"
+    - generic "Leuchtendes Gestein"
+    - paragraph: Form bearbeiten → Oberfläche malen → Leuchten. Strg entfernt Leuchten.
+    - text: Oberflächenleuchten
+    - textbox "Oberflächenleuchten": "#ff7c36"
+    - text: Leuchtstärke
+    - spinbutton "Leuchtstärke": "3"
+    - text: Spalten betonen
+    - spinbutton "Spalten betonen": "0.7"
+    - checkbox "Inneren Leuchtbereich aktivieren"
+    - text: Inneren Leuchtbereich aktivieren
+    - text: Farbe des Inneren
+    - textbox "Farbe des Inneren": "#ff5424"
+    - text: Stärke des Inneren
+    - spinbutton "Stärke des Inneren": "4"
+    - text: Kernzentrum X
+    - spinbutton "Kernzentrum X": "0"
+    - text: Kernradius X
+    - spinbutton "Kernradius X": "15"
+    - text: Kernzentrum Y
+    - spinbutton "Kernzentrum Y": "0"
+    - text: Kernradius Y
+    - spinbutton "Kernradius Y": "14"
+    - text: Kernzentrum Z
+    - spinbutton "Kernzentrum Z": "0"
+    - text: Kernradius Z
+    - spinbutton "Kernradius Z": "15"
+    - text: Weicher Kernrand
+    - spinbutton "Weicher Kernrand": "0.2"
+    - checkbox "Rasterfang · 2 m" [checked]
+    - text: Rasterfang · 2 m
+    - generic "Level & Lieferauftrag"
+    - text: Levelradius
+    - spinbutton "Levelradius": "210"
+    - text: Seed
+    - spinbutton "Seed": "7113"
+    - text: Lieferziel Ferrit
+    - spinbutton "Lieferziel Ferrit": "30"
+    - text: Lieferziel Kupfererz
+    - spinbutton "Lieferziel Kupfererz": "20"
+    - text: Lieferziel Kristall
+    - spinbutton "Lieferziel Kristall": "10"
+    - generic "Theme gestalten"
+    - text: Theme-Variante
+    - combobox "Theme-Variante":
+      - option "Gürtel · Tiefenraum"
+      - option "Gürtel · Kaltes Sternenlicht"
+      - option "Gürtel · Tiefenraum · Variante"
+      - option "Gürtel · Tiefenraum · Variante"
+      - option "Gürtel · Tiefenraum · Variante" [selected]
+    - text: Name der Variante
+    - textbox "Name der Variante": Gürtel · Tiefenraum · Variante
+    - text: Hintergrund
+    - textbox "Hintergrund": "#050a11"
+    - text: Felsfarbe
+    - textbox "Felsfarbe": "#c3c9ce"
+    - text: Hauptlicht
+    - textbox "Hauptlicht": "#dce5ec"
+    - text: Umgebungslicht
+    - textbox "Umgebungslicht": "#91aecb"
+    - text: Streiflicht
+    - textbox "Streiflicht": "#efbb87"
+    - text: Lichtstärke
+    - spinbutton "Lichtstärke": "4.2"
+    - text: Lichtrichtung °
+    - spinbutton "Lichtrichtung °": "-128"
+    - text: Lichthöhe °
+    - spinbutton "Lichthöhe °": "39"
+    - text: Umgebungsstärke
+    - spinbutton "Umgebungsstärke": "0.65"
+    - text: Streiflichtstärke
+    - spinbutton "Streiflichtstärke": "2.4"
+    - text: Dekorationsdichte
+    - spinbutton "Dekorationsdichte": "1"
+    - heading "Prüfung · 4" [level=3]
+    - list:
+      - listitem: Felsformationen überschneiden sich.
+      - listitem: Felsformationen überschneiden sich.
+      - listitem: Erzstelle hat keinen freien Anflug.
+      - listitem: Erzstelle hat keinen freien Anflug.
+  - generic: "Ziehen: verschieben · Alt + Ziehen / Mitte / Rechts: Ansicht · Mausrad: Zoom"
+  - generic: Lokal gespeichert
+  - generic: Entf löschen · Strg D duplizieren · Strg Z zurück · Q/E drehen
+PASS production play enters the belt expedition
+PASS returning restores the visible editor

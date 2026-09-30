@@ -1,0 +1,36 @@
+Editor integration checks
+PASS Schema upgrade removes old asteroid drafts/templates and preserves the entire planet
+PASS Built-in level and theme open as an independent draft
+PASS Rotation applies through the visible property control
+PASS Scale applies to the placed asset
+PASS Undo restores scale
+PASS Redo restores edited scale
+PASS Theme updates the shared game renderer
+PASS Duplicate creates an independent asteroid
+PASS Delete removes the selected instance and its ores
+PASS IndexedDB retains level and custom theme
+PASS JSON import/export preserves the complete package
+PASS Playtest compiles the current document even after an older registry snapshot
+PASS Playtest starts the current authored level
+PASS Returning from play preserves the document and does not save mined ore
+PASS Second playtest starts fresh
+PASS Geometry and texture counts remain stable across repeated editor rebuilds
+PASS Pasted JSON imports as an independent local level
+PASS A new asteroid owns its editable form inside the level
+PASS Authored ore stores a local surface anchor
+PASS Optional template retains shape and anchored ore independently
+PASS Placed templates create independent object and form IDs
+PASS Each template copy owns distinct ore IDs and surface anchors
+PASS Sculpting one placement leaves the other and saved template untouched
+PASS Deleting a template retains both level-owned forms
+PASS JSON imports all local shapes and ore without a template store
+PASS IndexedDB reload retains a sculpted form
+PASS Lost ore support is marked in the scene and properties
+PASS Repair removes unsupported samples only
+PASS Repair can be undone without losing ore anchors
+PASS Planet hills and their ore placements can be edited
+PASS Planet formation rotation reaches terrain and collision data
+PASS Editor returns to the game
+
+ALL EDITOR CHECKS PASSED
+GPU memory samples: [{"geometries":128,"textures":33},{"geometries":128,"textures":33},{"geometries":128,"textures":33},{"geometries":128,"textures":33},{"geometries":128,"textures":33},{"geometries":128,"textures":33}]

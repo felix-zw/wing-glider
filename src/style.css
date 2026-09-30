@@ -145,6 +145,10 @@ body[data-ui=loading] #shelter-guide, body[data-ui=choosing] #shelter-guide { vi
 .level-dialog > h2 { font: 500 clamp(34px, 4vw, 49px)/1.15 var(--condensed); margin: 14px 0; letter-spacing: -.7px; }
 .level-intro { margin: 0; color: #bdcec5; font-size: 13px; line-height: 1.7; }
 .level-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 30px; }
+.level-entry { display:grid; grid-template-rows:1fr auto; gap:9px; min-width:0; }
+.level-entry .level-card { width:100%; margin:0; }
+.level-edit { width:100%; padding:11px 16px; color:#c7dcd4; background:#102027; border:1px solid #7898a94f; font-size:12px; text-align:center; }
+.level-edit:hover { background:#244039; border-color:#c3dfbd; }
 .level-card { padding: 0 0 23px; border: 1px solid #aec7b84a; background: #182924; text-align: left; overflow: hidden; letter-spacing: 0; }
 .level-card:hover { transform: translateY(-3px); background: #20382e; border-color: #c3dfbd; }
 .level-card.belt { background: #111f2c; border-color: #7898a957; }
@@ -346,4 +350,17 @@ body[data-level=belt] #shelter-guide { background: #102635c7; border-color: #94c
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; }
   .level-card:hover { transform: none; }
+}
+#deployment-status { display:none;position:fixed;z-index:12;left:50%;bottom:max(36px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(360px,calc(100vw - 36px));padding:16px 22px;background:#091720e8;border:1px solid #dfc39255;border-radius:12px;text-align:center;color:#e9e4d4;pointer-events:none; }
+#deployment-status .eyebrow { color:#dfc392;margin:0 0 8px; }
+#deployment-status strong { font-size:14px;font-weight:500; }
+#deployment-status .track { margin-top:14px; }
+#deployment-progress { background:#dfc392;height:100%;display:block;transition:none; }
+body[data-ui="deploying"] #deployment-status { display:block; }
+body[data-ui="deploying"] :is(.mission,.weather,.compass,#shelter-guide,.telemetry,.navigation,.interaction,footer,#mission-success) { visibility:hidden;pointer-events:none; }
+@media (max-height:450px) {
+  #deployment-status { bottom:8px;padding:8px 14px; }
+  #deployment-status .eyebrow { display:none; }
+  #deployment-status strong { font-size:12px; }
+  #deployment-status .track { margin-top:6px;height:2px; }
 }

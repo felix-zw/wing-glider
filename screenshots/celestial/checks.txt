@@ -1,0 +1,40 @@
+Celestial integration
+PASS game angle and true game preview are exposed in the spatial toolbar
+PASS game angle matches gameplay without editing the level
+PASS planet can move well below the old 800 m limit
+PASS enlarging a near body raises distance safely in the same edit
+PASS size and automatic distance correction undo together
+PASS redo restores the safe large body
+PASS numeric ring tilt updates its quaternion
+PASS concentric three-axis rotation handles are visible
+PASS rotation handle starts a ring gesture
+PASS live ring rotation retains draft and world meshes
+PASS ring gesture commits a changed orientation
+PASS ring drag is one global undo step
+PASS ring rotation redo restores exact data
+PASS Escape cancels an active ring gesture
+PASS pointer cancellation restores ring data
+PASS duplicating a planet deep-copies ring data
+PASS editing duplicated ring leaves original unchanged
+PASS duplicate can be removed independently
+PASS preview shows the spawn without the arrival sequence
+PASS animated preview changes no expedition state or authored document
+PASS preview uses the unchanged orthographic gameplay camera
+PASS preview uses a full-window postprocessed texture before letterboxing
+PASS preview cannot accidentally move a sky object
+PASS repeated overview / preview switches do not accumulate geometries
+MEMORY [109,109,109,109,109]
+FRAME {"label":"High game preview","width":1920,"height":1080,"medianMs":16.700000047683716,"p95Ms":17.299999952316284,"drawCalls":204,"triangles":365947,"particles":2000,"memory":{"geometries":109,"textures":34}}
+PASS Standard shares a 700-particle budget across rings
+FRAME {"label":"Standard game preview","width":1920,"height":1080,"medianMs":16.699999809265137,"p95Ms":17.100000143051147,"drawCalls":112,"triangles":132827,"particles":700,"memory":{"geometries":109,"textures":30}}
+PASS High shares a 2000-particle budget across rings
+PASS returning from preview restores overview framing
+PASS corona controls do not change global lighting strength
+PASS shared editor shader receives corona controls
+PASS standard editor reduces prominence arcs
+PASS high editor restores full prominence detail
+PASS ring and corona persist exactly through IndexedDB and JSON
+PASS full play return preserves celestial draft and view
+PASS solar, ring and particle shaders compile on real WebGL
+PASS Aster supports the same stationary game preview
+ALL CELESTIAL CHECKS PASSED

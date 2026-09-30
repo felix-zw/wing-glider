@@ -1,0 +1,33 @@
+Generator integration
+PASS generation runs in a worker while play is disabled
+PASS form generator commits a varied local volume
+FORM_MS 483.1
+PASS form generation is exactly one undo step
+PASS form redo restores the generated result without rerolling
+PASS ore generator creates surface layers
+PASS ore generation leaves form, paint and collision untouched
+PASS generated ore remains attached in the game world
+PASS ore undo removes the entire generation
+PASS ore redo restores exact mass and cells
+PASS single-resource regeneration preserves the other ores
+PASS surface glow generation preserves ores
+PASS surface glow generation preserves the geometric form
+PASS core generator configures an exposed glowing interior
+PASS core generation preserves painting and updates without rebuilding terrain
+PASS generated appearance values fit the editable property controls
+PASS undo cancels pending generation and stale results cannot commit
+PASS planet distance changes depth and apparent size without changing its physical radius
+PASS global Ctrl Z works even with a property input focused
+PASS global Ctrl Y redoes the distance edit
+PASS new generated asteroid uses the normal placement workflow
+PASS placement creates a complete independently editable asteroid
+PASS new asteroid includes separately editable ore and glow
+PASS undo removes new form and generated ore together
+PASS redo restores the complete independent placement
+PASS local save retains generated shape, masks, ore and distance
+PASS generated level JSON round trip
+PASS generation on a duplicated object leaves the source independent
+PASS generated materials compile in the live renderer
+ALL GENERATOR CHECKS PASSED
+PASS native mouse generation and focused-input Ctrl Z / Ctrl Shift Z
+PASS native planet distance edit visibly changes its apparent size

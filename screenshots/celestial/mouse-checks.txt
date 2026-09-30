@@ -1,0 +1,1 @@
+Real mouse drag: X ring angle -36° → -48.834°. Global undo restored X=-36°, Y=0°, Z=8°. A second real drag changed the ring orientation on another handle.

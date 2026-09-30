@@ -1,0 +1,50 @@
+import * as THREE from 'three';
+import {World} from '../src/world';
+import {LevelEditor} from '../src/editor';
+import {BUILTIN_DOCUMENTS,cloneDocument,packageLevel,parsePackage} from '../src/level-document';
+import {newSculpt} from '../src/sculpt';
+import {getSculpt} from '../src/sculpt-runtime';
+import {newSkyBody,themeLighting} from '../src/lighting';
+import {THEMES} from '../src/themes';
+import {savedLevels} from '../src/level-storage';
+const output=document.querySelector<HTMLElement>('#results')!,button=document.querySelector<HTMLButtonElement>('#run')!;
+const world=new World(document.querySelector<HTMLElement>('#viewport')!),editor=new LevelEditor(world,{play:()=>{},close:()=>{},changed:()=>{}}),api=editor as any;
+const frame=()=>new Promise<void>(r=>requestAnimationFrame(()=>r()));
+function render(){if(editor.active)editor.render();requestAnimationFrame(render);}requestAnimationFrame(render);
+const check=(condition:unknown,label:string)=>{if(!condition)throw Error(label);output.textContent+='\nPASS '+label;};
+const click=(selector:string)=>{const el=document.querySelector<HTMLButtonElement>(selector)!;if(!el)throw Error('Missing '+selector);el.click();};
+function field(selector:string,value:string|boolean){const el=document.querySelector<HTMLInputElement|HTMLSelectElement>(selector)!;if(!el)throw Error('Missing '+selector);if(typeof value==='boolean')(el as HTMLInputElement).checked=value;else el.value=value;el.dispatchEvent(new Event('change',{bubbles:true}));}
+async function generated(){for(let i=0;i<600&&api.generation;i++)await frame();if(api.generation)throw Error('Generator timeout');await editor.whenReady();editor.render();await frame();}
+function select(id:string){api.history.current.selection=id;api.drawUI();}
+document.querySelector<HTMLButtonElement>('#hide')!.onclick=e=>(e.currentTarget as HTMLElement).parentElement!.hidden=true;
+world.ready.then(()=>button.disabled=false);
+button.onclick=async()=>{button.disabled=true;output.textContent='Generator integration';try{
+  const d=cloneDocument(BUILTIN_DOCUMENTS[1]);d.id='generator-qa-'+crypto.randomUUID();d.name='Generatorwerkstatt';d.objects=[{...d.objects[0],x:0,z:0,rotation:0,scale:1,parameters:{sculptId:'demo'}}];d.sculpts={demo:newSculpt('demo','split')};d.deposits=[];d.delivery={ferrite:0,copper:0,crystal:0};d.spawn={x:65,z:0};d.base.x=-85;d.base.z=-65;
+  d.lighting=themeLighting(THEMES.belt);const planet=newSkyBody('demo-planet','planet');Object.assign(planet,{azimuth:-60,elevation:-34,size:24});d.lighting.bodies.push(planet);
+  await editor.open(d);select(d.objects[0].id);field('[data-generator="autoSeed"]',false);field('[data-generator="seed"]','411');field('[data-generator="shape"]','split');
+  const before=JSON.stringify(editor.document),start=performance.now();click('[data-generate="form"]');check(!!api.generation&&document.querySelector<HTMLButtonElement>('#editor-play')!.disabled,'generation runs in a worker while play is disabled');await generated();
+  const form=JSON.stringify(editor.document);check(form!==before&&!!editor.document.sculpts!.demo.variation,'form generator commits a varied local volume');output.textContent+='\nFORM_MS '+(performance.now()-start).toFixed(1);
+  click('#editor-undo');check(JSON.stringify(editor.document)===before,'form generation is exactly one undo step');click('#editor-redo');check(JSON.stringify(editor.document)===form,'form redo restores the generated result without rerolling');
+  const compiled=getSculpt(d.id,d.objects[0].id)!,shape=JSON.stringify(editor.document.sculpts!.demo);field('[data-generator="seed"]','20');click('[data-generate="ore"]');await generated();
+  check(editor.document.deposits.length>=3&&editor.document.deposits.every(o=>o.paint),'ore generator creates surface layers');check(JSON.stringify(editor.document.sculpts!.demo)===shape&&getSculpt(d.id,d.objects[0].id)===compiled,'ore generation leaves form, paint and collision untouched');
+  check(world.levelWorld.deposits.every(o=>o.surface?.cells?.every(c=>c.valid)),'generated ore remains attached in the game world');
+  const allOres=JSON.stringify(editor.document.deposits),beforeOre=JSON.stringify(editor.document);click('#editor-undo');check(editor.document.deposits.length===0,'ore undo removes the entire generation');click('#editor-redo');check(JSON.stringify(editor.document)===beforeOre,'ore redo restores exact mass and cells');
+  field('[data-generator="resource"]','ferrite');click('[data-generate="ore"]');await generated();check(JSON.stringify(editor.document.deposits.filter(o=>o.resource!=='ferrite'))===JSON.stringify(JSON.parse(allOres).filter((o:any)=>o.resource!=='ferrite')),'single-resource regeneration preserves the other ores');
+  const positions=JSON.stringify(getSculpt(d.id,d.objects[0].id)!.high.positions),oreState=JSON.stringify(editor.document.deposits);field('[data-generator="profile"]','warm');click('[data-generate="glow"]');await generated();
+  check(editor.document.sculpts!.demo.strokes.some(s=>s.layer==='glow')&&JSON.stringify(editor.document.deposits)===oreState,'surface glow generation preserves ores');check(JSON.stringify(getSculpt(d.id,d.objects[0].id)!.high.positions)===positions,'surface glow generation preserves the geometric form');
+  const mask=JSON.stringify(editor.document.sculpts!.demo.strokes),mesh=world.editorObjects[0];click('[data-generate="core"]');await generated();check(editor.document.sculpts!.demo.glow!.core.enabled,'core generator configures an exposed glowing interior');check(JSON.stringify(editor.document.sculpts!.demo.strokes)===mask&&world.editorObjects[0]===mesh,'core generation preserves painting and updates without rebuilding terrain');
+  check(Array.from(document.querySelectorAll<HTMLInputElement>('[data-glow-field]')).every(input=>input.checkValidity()),'generated appearance values fit the editable property controls');
+  const beforeCancel=JSON.stringify(editor.document);click('[data-generate="form"]');click('#editor-undo');await generated();for(let i=0;i<6;i++)await frame();check(JSON.stringify(editor.document)===beforeCancel&&!api.generation,'undo cancels pending generation and stale results cannot commit');
+  click('[data-light-select="demo-planet"]');const skyBody=(world.lighting as any).bodies.get('demo-planet') as THREE.Group,radius=skyBody.scale.x;
+  field('[data-light-field="distance"]','4000');editor.render();check(Math.abs(skyBody.position.length()-4000)<.01&&skyBody.scale.x===radius,'planet distance changes depth and apparent size without changing its physical radius');
+  const input=document.querySelector<HTMLInputElement>('[data-light-field="distance"]')!;input.focus();input.dispatchEvent(new KeyboardEvent('keydown',{key:'z',ctrlKey:true,bubbles:true,cancelable:true}));editor.render();check(editor.document.lighting!.bodies.at(-1)!.distance===1000,'global Ctrl Z works even with a property input focused');
+  document.querySelector<HTMLInputElement>('[data-light-field="distance"]')!.dispatchEvent(new KeyboardEvent('keydown',{key:'y',ctrlKey:true,bubbles:true,cancelable:true}));editor.render();check(editor.document.lighting!.bodies.at(-1)!.distance===4000,'global Ctrl Y redoes the distance edit');
+  click('#editor-sky');select(d.objects[0].id);field('[data-generator="resource"]','all');field('[data-generator="seed"]','522');const count=editor.document.objects.length;click('#generator-new');
+  check(api.pendingAsset==='generated','new generated asteroid uses the normal placement workflow');api.place('generated',80,70);await generated();check(editor.document.objects.length===count+1,'placement creates a complete independently editable asteroid');
+  const added=editor.document.objects.at(-1)!;check(!!editor.document.sculpts![String(added.parameters.sculptId)].glow?.core.enabled&&editor.document.deposits.some(d=>d.structureId===added.id),'new asteroid includes separately editable ore and glow');
+  const placed=JSON.stringify(editor.document);click('#editor-undo');check(editor.document.objects.length===count,'undo removes new form and generated ore together');click('#editor-redo');check(JSON.stringify(editor.document)===placed,'redo restores the complete independent placement');
+  await editor.persist();const saved=(await savedLevels()).find(p=>p.level.id===d.id)!;check(JSON.stringify(saved.level)===JSON.stringify(editor.document),'local save retains generated shape, masks, ore and distance');check(JSON.stringify(parsePackage(JSON.stringify(packageLevel(editor.document))).level)===JSON.stringify(editor.document),'generated level JSON round trip');
+  api.duplicate();const copy=editor.document.objects.at(-1)!;const copySource=editor.document.sculpts![String(copy.parameters.sculptId)],original=JSON.stringify(editor.document.sculpts![String(added.parameters.sculptId)]);field('[data-generator="seed"]','623');click('[data-generate="form"]');await generated();check(JSON.stringify(editor.document.sculpts![String(added.parameters.sculptId)])===original&&JSON.stringify(editor.document.sculpts![String(copy.parameters.sculptId)])!==JSON.stringify(copySource),'generation on a duplicated object leaves the source independent');
+  click('#editor-undo');click('#editor-undo');select(d.objects[0].id);api.cameraView={x:28,z:20,zoom:.75};editor.render();
+  check(!world.renderer.info.programs?.some((p:any)=>p.diagnostics&&!p.diagnostics.runnable),'generated materials compile in the live renderer');output.textContent+='\nALL GENERATOR CHECKS PASSED';
+}catch(e){output.textContent+='\nFAIL '+String(e);console.error(e);}finally{button.disabled=false;}};

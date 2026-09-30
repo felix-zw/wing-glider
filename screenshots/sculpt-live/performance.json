@@ -1,0 +1,97 @@
+{
+  "date": "2026-09-29T17:45:16.248Z",
+  "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+  "gpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "resolution": [
+    1920,
+    1080
+  ],
+  "warmupSeconds": 3,
+  "measurementSeconds": 15,
+  "samples": [
+    {
+      "quality": "high",
+      "workload": "aster-flight",
+      "frames": 851,
+      "averageFps": 56.74960155244503,
+      "p95FrameMs": 18.100000000000364,
+      "drawCalls": 300.3807285546416,
+      "triangles": 2431728.8719153935,
+      "memory": {
+        "geometries": 158,
+        "textures": 35
+      }
+    },
+    {
+      "quality": "high",
+      "workload": "belt-mining",
+      "frames": 851,
+      "averageFps": 56.78102939802767,
+      "p95FrameMs": 18.099999999998545,
+      "drawCalls": 306.8836662749706,
+      "triangles": 498675.4136310223,
+      "memory": {
+        "geometries": 95,
+        "textures": 35
+      }
+    },
+    {
+      "quality": "high",
+      "workload": "dense-editor",
+      "frames": 853,
+      "averageFps": 56.85302194140073,
+      "p95FrameMs": 18.099999999998545,
+      "drawCalls": 154,
+      "triangles": 618887,
+      "memory": {
+        "geometries": 91,
+        "textures": 33
+      }
+    },
+    {
+      "quality": "standard",
+      "workload": "aster-flight",
+      "frames": 851,
+      "averageFps": 56.75111534947616,
+      "p95FrameMs": 18.10000000000582,
+      "drawCalls": 162.70505287896592,
+      "triangles": 941500.6368977673,
+      "memory": {
+        "geometries": 159,
+        "textures": 34
+      }
+    },
+    {
+      "quality": "standard",
+      "workload": "belt-mining",
+      "frames": 852,
+      "averageFps": 56.78902078931403,
+      "p95FrameMs": 18.10000000000582,
+      "drawCalls": 169.13967136150234,
+      "triangles": 192525.37089201878,
+      "memory": {
+        "geometries": 95,
+        "textures": 31
+      }
+    },
+    {
+      "quality": "standard",
+      "workload": "dense-editor",
+      "frames": 852,
+      "averageFps": 56.82576101165863,
+      "p95FrameMs": 18.09999999999127,
+      "drawCalls": 86,
+      "triangles": 151795,
+      "memory": {
+        "geometries": 91,
+        "textures": 29
+      }
+    },
+    {
+      "workload": "raf-baseline",
+      "averageFps": 56.97124498633086,
+      "p95FrameMs": 18.10000000000582
+    }
+  ],
+  "completed": true
+}

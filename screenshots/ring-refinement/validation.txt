@@ -1,0 +1,8 @@
+2026-09-30 — Ring refinement and editor fixes
+Production build: passed (TypeScript + Vite).
+Unit tests: 131 passed, 0 failures.
+Browser checks: {"celestial":37,"sky":45,"menu":7,"lighting":35}; total 124.
+Real mouse: right properties ring button toggles true -> false; toolbar exit removed. Upper switch changes -36 -> +36 degrees. Upper body drag changes to +28.097 degrees, azimuth -80.978. Lower switch immediately mirrors to -28.097; lower body drag changes azimuth to -74.73 and reaches horizon at 0 degrees.
+1080p ring scene: High 17.6 ms median / 18.4 ms p95, 204 calls, 2000 instances; Standard 17.8 / 18.2 ms, 112 calls, 700 instances.
+Geometries across five overview/game preview cycles: [102,102,102,102,102].
+No WebGL shader errors in celestial, spatial sky or lighting fixtures. Level menu fixture also passed; browser instrumentation emitted a MutationObserver error outside application source while observing the iframe.

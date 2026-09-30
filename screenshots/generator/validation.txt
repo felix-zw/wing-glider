@@ -1,0 +1,6 @@
+2026-09-30
+119 unit tests passed; 6 generator tests repeated after parameter rounding.
+TypeScript check and production build passed.
+Generator geometry input to rendered/committed result: 483.1 ms in browser fixture.
+High <= 40000 and Standard <= 12000 triangles; five generated families checked for closed seams.
+Browser checks cover independent generators, cancellation, exact undo/redo, surface ore, storage, JSON, copied objects and native keyboard input.

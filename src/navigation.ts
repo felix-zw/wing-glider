@@ -1,6 +1,6 @@
 import { COLLISION, CONFIG } from './config';
 import { contains, sweep } from './collision';
-import { getLevelWorld, getSolidFootprint, type LevelWorld } from './levels';
+import { getLevelWorld, getSolidFootprints, type LevelWorld } from './levels';
 import type { Position } from './resources';
 
 const radius = COLLISION.shipRadius + 0.2;
@@ -9,20 +9,21 @@ function visibilityGraph(world: LevelWorld) {
   const cached = graphCache.get(world); if (cached) return cached;
   const nodes: Position[] = [];
   for (const s of world.solids) {
-    const footprint = getSolidFootprint(s);
-    if (footprint) for (let i = 0; i < footprint.length; i++) {
+    const footprints = getSolidFootprints(s);
+    if (footprints.length) for(const footprint of footprints)for (let i = 0; i < footprint.length; i++) {
+      if(footprint.length>32&&i%4!==0)continue;
       const prev = footprint[(i + footprint.length - 1) % footprint.length], p = footprint[i], next = footprint[(i + 1) % footprint.length];
       const al = Math.hypot(p.x - prev.x, p.z - prev.z), bl = Math.hypot(next.x - p.x, next.z - p.z);
       const ax = (p.z - prev.z) / al, az = -(p.x - prev.x) / al, bx = (next.z - p.z) / bl, bz = -(next.x - p.x) / bl;
       const scale = (radius + 2) / (1 + ax * bx + az * bz);
       nodes.push({ x: p.x + (ax + bx) * scale, z: p.z + (az + bz) * scale });
     }
-    else if (s.kind === 'asteroid') for (let i = 0; i < 16; i++) {
+    else if (s.kind === 'asteroid'&&!s.footprints) for (let i = 0; i < 16; i++) {
       const a = i / 16 * Math.PI * 2, r = (s.radius + radius + 2) / Math.cos(Math.PI / 16);
       nodes.push({ x: s.x + Math.cos(a) * r, z: s.z + Math.sin(a) * r });
     }
   }
-  const valid = nodes.filter(p => Math.abs(p.x) < CONFIG.worldHalf - 3 && Math.abs(p.z) < CONFIG.worldHalf - 3 && !world.solids.some(s => contains(s, p, radius)));
+  const valid = nodes.filter(p => Math.abs(p.x) < world.bounds - 3 && Math.abs(p.z) < world.bounds - 3 && !world.solids.some(s => contains(s, p, radius)));
   const edges = valid.map((a, i) => valid.map((b, j) => i !== j && !sweep(a, b, world.solids, radius) ? Math.hypot(a.x - b.x, a.z - b.z) + 30 : Infinity));
   const graph = { nodes: valid, edges }; graphCache.set(world, graph); return graph;
 }
@@ -60,8 +61,8 @@ export function estimateRouteSeconds(start: Position, heading: number, route: re
   }
   return time;
 }
-export function shelterRoute(start: Position & { heading: number }) {
-  const world = getLevelWorld('aster');
-  const routes = world.shelters.map(shelter => { const points = findRoute(world, start, shelter); return { shelter, points, seconds: points.length ? estimateRouteSeconds(start, start.heading, points) : Infinity }; });
+export function shelterRoute(start: Position & { heading: number; levelId?:string }) {
+  const world = getLevelWorld(start.levelId);
+  const routes = (world.shelters.length?world.shelters:[{...world.base,name:'ATLAS'}]).map(shelter => { const points = findRoute(world, start, shelter); return { shelter, points, seconds: points.length ? estimateRouteSeconds(start, start.heading, points) : Infinity }; });
   return routes.reduce((a, b) => a.seconds < b.seconds ? a : b);
 }
